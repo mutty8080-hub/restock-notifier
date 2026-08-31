@@ -144,8 +144,10 @@
 
     <div class="card">
       <label style="margin-top:0;">Diagnostics</label>
+      <div id="tokenPreview" class="item-meta" style="margin-bottom:10px;"></div>
       <button class="secondary" onclick="testConnection()">Test GitHub connection</button>
       <button class="secondary" onclick="sendTestNotification()">Send test Telegram + Gmail</button>
+      <button class="secondary" onclick="resetSetup()">Reset setup (clear saved token)</button>
       <div id="diagStatus" class="status"></div>
     </div>
 
@@ -208,7 +210,22 @@ function tryUnlock() {
 function unlockApp() {
   document.getElementById("lockScreen").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
+  const s = getSettings();
+  const preview = document.getElementById("tokenPreview");
+  if (preview && s.token) {
+    preview.textContent = `Using owner: ${s.owner} · repo: ${s.repo} · token ending in …${s.token.slice(-6)}`;
+  }
   loadWatchlist();
+}
+
+function resetSetup() {
+  if (!confirm("This clears your saved passcode, owner, repo, and token from this browser. Continue?")) return;
+  localStorage.removeItem("rn_pin");
+  localStorage.removeItem("rn_owner");
+  localStorage.removeItem("rn_repo");
+  localStorage.removeItem("rn_token");
+  document.getElementById("app").classList.add("hidden");
+  document.getElementById("setupScreen").classList.remove("hidden");
 }
 
 function lockApp() {
