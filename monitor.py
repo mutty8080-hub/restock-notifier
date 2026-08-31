@@ -142,6 +142,14 @@ def send_gmail(subject, body):
 
 
 def main():
+    if os.environ.get("TEST_MODE") == "true":
+        msg = "Test notification from your restock notifier — Telegram/Gmail are wired up correctly."
+        print("Running in TEST_MODE, sending test notification...")
+        send_telegram(msg)
+        send_gmail("Restock Notifier: Test Notification", msg)
+        print("Done.")
+        return
+
     watchlist = load_json(WATCHLIST_FILE, [])
     state = load_json(STATE_FILE, {})
 

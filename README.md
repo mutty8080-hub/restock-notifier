@@ -21,7 +21,8 @@ product is back in stock AND at/under the price you set. Fully free.
 1. GitHub → Settings (your account, not the repo) → Developer settings →
    Personal access tokens → Fine-grained tokens → Generate new token.
 2. Repository access: "Only select repositories" → pick this repo.
-3. Permissions: Contents → Read and write. Nothing else.
+3. Permissions: **Contents → Read and write**, and **Actions → Read and write**
+   (Actions access is only needed for the "Send test notification" button).
 4. Generate, copy the token (you won't see it again) — you'll paste this
    into the UI's setup screen the first time you open it.
 
@@ -60,6 +61,17 @@ Add each of these:
 3. Add a product: paste an ASIN or Amazon link, set max price, pick duration.
 4. GitHub Actions checks every 5 minutes automatically — no button to press.
    You can watch it run under the repo's "Actions" tab.
+
+## Troubleshooting a 404 on save
+
+If "Add to watchlist" fails with a 404, use the new **"Test GitHub connection"**
+button on the page — it shows GitHub's actual error message, which usually
+points to one of:
+
+- Owner/repo typed wrong in setup (case-sensitive, must match exactly)
+- `watchlist.json` not at the root of the repo
+- Token not scoped to this repo, or missing the Contents permission
+- Repo name mismatch between the Pages URL and what you typed into setup
 
 ## Notes / limits
 

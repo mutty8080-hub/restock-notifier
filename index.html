@@ -142,6 +142,13 @@
       <div id="itemList"><div class="empty">Loading…</div></div>
     </div>
 
+    <div class="card">
+      <label style="margin-top:0;">Diagnostics</label>
+      <button class="secondary" onclick="testConnection()">Test GitHub connection</button>
+      <button class="secondary" onclick="sendTestNotification()">Send test Telegram + Gmail</button>
+      <div id="diagStatus" class="status"></div>
+    </div>
+
     <button class="secondary" onclick="lockApp()">Lock</button>
   </div>
 </div>
@@ -220,7 +227,10 @@ async function fetchWatchlist() {
   const res = await fetch(apiUrl(), {
     headers: { Authorization: `token ${s.token}`, Accept: "application/vnd.github+json" },
   });
-  if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`GitHub API error: ${res.status} — ${body.slice(0, 200)}`);
+  }
   const data = await res.json();
   const content = JSON.parse(decodeURIComponent(escape(atob(data.content))));
   return { content, sha: data.sha };
@@ -238,7 +248,48 @@ async function pushWatchlist(list, sha, message) {
     headers: { Authorization: `token ${s.token}`, Accept: "application/vnd.github+json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "");
+    throw new Error(`GitHub API error: ${res.status} — ${errBody.slice(0, 200)}`);
+  }
+}
+
+async function testConnection() {
+  const diag = document.getElementById("diagStatus");
+  diag.textContent = "Testing…";
+  diag.className = "status";
+  try {
+    const { content } = await fetchWatchlist();
+    diag.textContent = `Connected OK — found ${content.length} product(s) in watchlist.json.`;
+    diag.className = "status ok";
+  } catch (e) {
+    diag.textContent = e.message;
+    diag.className = "status err";
+  }
+}
+
+async function sendTestNotification() {
+  const diag = document.getElementById("diagStatus");
+  const s = getSettings();
+  diag.textContent = "Triggering test notification…";
+  diag.className = "status";
+  try {
+    const url = `https://api.github.com/repos/${s.owner}/${s.repo}/actions/workflows/monitor.yml/dispatches`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `token ${s.token}`, Accept: "application/vnd.github+json" },
+      body: JSON.stringify({ ref: "main", inputs: { test: "true" } }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`GitHub API error: ${res.status} — ${body.slice(0, 200)}`);
+    }
+    diag.textContent = "Triggered — check Telegram/Gmail in ~30-60 sec, or the Actions tab for progress.";
+    diag.className = "status ok";
+  } catch (e) {
+    diag.textContent = e.message;
+    diag.className = "status err";
+  }
 }
 
 function extractAsin(value) {
