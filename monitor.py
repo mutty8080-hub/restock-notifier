@@ -76,7 +76,7 @@ def extract_asin(value):
 
 
 def check_product(asin):
-    """Returns (in_stock: bool, price: float|None, title: str|None)."""
+    """Returns (in_stock: bool, price: float|None, title: str|None, image_url: str|None)."""
     url = f"https://www.amazon.com/dp/{asin}"
     try:
         with requests.Session() as session:
@@ -84,11 +84,11 @@ def check_product(asin):
             resp = session.get(url, timeout=15)
     except requests.RequestException as e:
         print(f"  [!] request failed for {asin}: {e}")
-        return False, None, None
+        return False, None, None, None
 
     if resp.status_code != 200:
         print(f"  [!] status {resp.status_code} for {asin} (possibly blocked)")
-        return False, None, None
+        return False, None, None, None
 
     html = resp.text
 
@@ -96,7 +96,7 @@ def check_product(asin):
     # in the logs from a genuine "out of stock" reading
     if "api-services-support@amazon.com" in html or "Enter the characters you see below" in html:
         print(f"  [!] {asin}: got a CAPTCHA/blocked page, not the real product page")
-        return False, None, None
+        return False, None, None, None
 
     # target the specific "availability" section just for diagnostic logging
     html_lower = html.lower()
@@ -128,28 +128,56 @@ def check_product(asin):
     if m:
         title = m.group(1).strip()
 
+    image_url = None
+    m = re.search(r'id="landingImage"[^>]*data-old-hires="([^"]+)"', html)
+    if not m:
+        m = re.search(r'id="landingImage"[^>]*src="([^"]+)"', html)
+    if not m:
+        m = re.search(r'"hiRes":"([^"]+)"', html)
+    if m:
+        image_url = m.group(1).replace("\\/", "/")
+
     # rule: if Amazon is showing a price, treat the product as in stock
     in_stock = price is not None
 
-    return in_stock, price, title
+    return in_stock, price, title, image_url
 
 
-def send_telegram(message):
+def send_telegram(message, image_url=None):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         print("  [!] Telegram not configured, skipping")
         return
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     try:
-        requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": message}, timeout=10)
+        if image_url:
+            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
+            requests.post(
+                url,
+                data={"chat_id": TELEGRAM_CHAT_ID, "caption": message, "photo": image_url},
+                timeout=10,
+            )
+        else:
+            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+            requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": message}, timeout=10)
     except requests.RequestException as e:
         print(f"  [!] telegram send failed: {e}")
 
 
-def send_gmail(subject, body):
+def send_gmail(subject, body, image_url=None):
     if not GMAIL_ADDRESS or not GMAIL_APP_PASSWORD:
         print("  [!] Gmail not configured, skipping")
         return
-    msg = MIMEText(body)
+
+    if image_url:
+        html_body = f"""
+        <div style="font-family: sans-serif;">
+          <p>{body.replace(chr(10), '<br>')}</p>
+          <img src="{image_url}" style="max-width: 400px; border-radius: 8px;">
+        </div>
+        """
+        msg = MIMEText(html_body, "html")
+    else:
+        msg = MIMEText(body)
+
     msg["Subject"] = subject
     msg["From"] = GMAIL_ADDRESS
     msg["To"] = GMAIL_TO
@@ -196,8 +224,8 @@ def main():
         still_active.append(item)
 
         print(f"[.] checking {name} ({asin})")
-        in_stock, price, title = check_product(asin)
-        print(f"    in_stock={in_stock} price={price}")
+        in_stock, price, title, image_url = check_product(asin)
+        print(f"    in_stock={in_stock} price={price} image={'yes' if image_url else 'no'}")
 
         condition_met = in_stock and (max_price is None or (price is not None and price <= max_price))
 
@@ -206,10 +234,11 @@ def main():
         if condition_met and not was_alerted:
             product_url = f"https://www.amazon.com/dp/{asin}"
             price_str = f"${price:.2f}" if price is not None else "unknown price"
-            message = f"IN STOCK: {title or name}\n{price_str}\n{product_url}"
+            found_at = now.strftime("%Y-%m-%d %H:%M UTC")
+            message = f"IN STOCK: {title or name}\n{price_str}\nFound: {found_at}\n{product_url}"
             print(f"    -> ALERT: {message}")
-            send_telegram(message)
-            send_gmail(f"Restock Alert: {title or name}", message)
+            send_telegram(message, image_url)
+            send_gmail(f"Restock Alert: {title or name}", message, image_url)
             state[asin] = {"alerted": True}
         elif not condition_met and was_alerted:
             # condition no longer true (sold out again / price rose) — reset so it can re-alert later
