@@ -106,22 +106,33 @@ def check_product(asin):
     if avail_match:
         print(f"    availability text: '{avail_match.group(1).strip()}'")
 
-    # crude price extraction — Amazon changes markup often, this covers common cases
+    # scope price search to the actual buy-box price block, not the whole
+    # page — otherwise prices from unrelated carousels/other listings can
+    # get picked up as if they were this product's price
     price = None
-    price_patterns = [
-        r'"priceAmount":\s*([\d.]+)',
-        r'id="priceblock_ourprice"[^>]*>\s*\$([\d,.]+)',
-        r'id="priceblock_dealprice"[^>]*>\s*\$([\d,.]+)',
-        r'class="a-price-whole">([\d,]+)<',
-    ]
-    for pat in price_patterns:
-        m = re.search(pat, html)
-        if m:
-            try:
-                price = float(m.group(1).replace(",", ""))
-                break
-            except ValueError:
-                continue
+    core_match = re.search(
+        r'id="(corePriceDisplay_desktop_feature_div|corePrice_feature_div|apex_desktop)"[\s\S]{0,3000}',
+        html,
+    )
+    search_scope = core_match.group(0) if core_match else None
+
+    if search_scope:
+        price_patterns = [
+            r'"priceAmount":\s*([\d.]+)',
+            r'class="a-price-whole">([\d,]+)<',
+            r'id="priceblock_ourprice"[^>]*>\s*\$([\d,.]+)',
+            r'id="priceblock_dealprice"[^>]*>\s*\$([\d,.]+)',
+        ]
+        for pat in price_patterns:
+            m = re.search(pat, search_scope)
+            if m:
+                try:
+                    price = float(m.group(1).replace(",", ""))
+                    break
+                except ValueError:
+                    continue
+    else:
+        print(f"    [!] no core price block found for {asin} — treating as no price/out of stock")
 
     title = None
     m = re.search(r'id="productTitle"[^>]*>\s*([^<]+)\s*<', html)
@@ -137,8 +148,13 @@ def check_product(asin):
     if m:
         image_url = m.group(1).replace("\\/", "/")
 
-    # rule: if Amazon is showing a price, treat the product as in stock
+    # rule: if Amazon is showing a price in the actual buy-box, treat the
+    # product as in stock — but let explicit "unavailable" text override that,
+    # as a safety net against a stray/misattributed price
     in_stock = price is not None
+    if avail_match and "unavailable" in avail_match.group(1).strip().lower():
+        print(f"    [!] availability text says unavailable — overriding in_stock to False")
+        in_stock = False
 
     return in_stock, price, title, image_url
 
