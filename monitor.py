@@ -1,4 +1,4 @@
-"""
+ """
 Amazon restock + price monitor.
 Reads watchlist.json, checks each product, sends Telegram + Gmail alerts
 when a product is BOTH in stock and at/under its max_price.
@@ -98,25 +98,13 @@ def check_product(asin):
         print(f"  [!] {asin}: got a CAPTCHA/blocked page, not the real product page")
         return False, None, None
 
-    # crude in-stock check
-    unavailable_markers = [
-        "currently unavailable",
-        "out of stock",
-        "see all buying options",
-        "temporarily out of stock",
-    ]
+    # target the specific "availability" section just for diagnostic logging
     html_lower = html.lower()
-    looks_unavailable = any(m in html_lower for m in unavailable_markers)
-
-    buy_indicators = [
-        "add-to-cart-button",
-        "buy-now-button",
-        "add to cart",
-        "buy now",
-    ]
-    looks_buyable = any(m in html_lower for m in buy_indicators)
-
-    in_stock = looks_buyable and not looks_unavailable
+    avail_match = re.search(
+        r'id="availability"[\s\S]{0,600}?<span[^>]*>([^<]+)</span>', html
+    )
+    if avail_match:
+        print(f"    availability text: '{avail_match.group(1).strip()}'")
 
     # crude price extraction — Amazon changes markup often, this covers common cases
     price = None
@@ -139,6 +127,9 @@ def check_product(asin):
     m = re.search(r'id="productTitle"[^>]*>\s*([^<]+)\s*<', html)
     if m:
         title = m.group(1).strip()
+
+    # rule: if Amazon is showing a price, treat the product as in stock
+    in_stock = price is not None
 
     return in_stock, price, title
 
