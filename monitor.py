@@ -24,7 +24,18 @@ HEADERS = {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     ),
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;q=0.9,"
+        "image/avif,image/webp,*/*;q=0.8"
+    ),
     "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Referer": "https://www.google.com/",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "cross-site",
+    "DNT": "1",
 }
 
 # ---------- config from environment (GitHub Secrets) ----------
@@ -68,7 +79,9 @@ def check_product(asin):
     """Returns (in_stock: bool, price: float|None, title: str|None)."""
     url = f"https://www.amazon.com/dp/{asin}"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=15)
+        with requests.Session() as session:
+            session.headers.update(HEADERS)
+            resp = session.get(url, timeout=15)
     except requests.RequestException as e:
         print(f"  [!] request failed for {asin}: {e}")
         return False, None, None
@@ -78,6 +91,12 @@ def check_product(asin):
         return False, None, None
 
     html = resp.text
+
+    # detect a CAPTCHA/blocked page specifically, so it's distinguishable
+    # in the logs from a genuine "out of stock" reading
+    if "api-services-support@amazon.com" in html or "Enter the characters you see below" in html:
+        print(f"  [!] {asin}: got a CAPTCHA/blocked page, not the real product page")
+        return False, None, None
 
     # crude in-stock check
     unavailable_markers = [
