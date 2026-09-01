@@ -22,5 +22,11 @@
     "name": "B0GMKGBSHQ",
     "max_price": 500,
     "watch_until": "2027-09-01"
+  },
+  {
+    "asin": "B0FHL1SX3G",
+    "name": "B0FHL1SX3G",
+    "max_price": 43,
+    "watch_until": "2027-09-01"
   }
 ]
