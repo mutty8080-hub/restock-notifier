@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Restock Notifier</title>
+<title>Amazon Restock Notifier</title>
 <style>
   :root {
     --bg: #0f1115;
@@ -92,8 +92,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Restock Notifier</h1>
-  <p class="subtitle">Manage your Amazon watchlist</p>
+  <h1>Amazon Restock Notifier</h1>
+  <p class="subtitle">Track Amazon products for restocks + price drops. (More marketplaces coming later.)</p>
 
   <!-- LOCK SCREEN -->
   <div id="lockScreen" class="card">
@@ -132,6 +132,7 @@
         <option value="3">3 months</option>
         <option value="6">6 months</option>
         <option value="12">12 months</option>
+        <option value="0">Until I turn it off</option>
       </select>
       <button onclick="addProduct()">Add to watchlist</button>
       <div id="addStatus" class="status"></div>
@@ -342,7 +343,7 @@ function renderList(items) {
     div.innerHTML = `
       <div>
         <div class="item-name">${item.name || item.asin}</div>
-        <div class="item-meta">≤ $${item.max_price} · until ${item.watch_until}</div>
+        <div class="item-meta">≤ $${item.max_price} · ${item.watch_until ? "until " + item.watch_until : "until turned off"}</div>
       </div>
       <button class="danger" data-asin="${item.asin}">Remove</button>
     `;
@@ -365,9 +366,12 @@ async function addProduct() {
   }
 
   const asin = extractAsin(asinRaw);
-  const until = new Date();
-  until.setMonth(until.getMonth() + months);
-  const watch_until = until.toISOString().slice(0, 10);
+  let watch_until = null;
+  if (months > 0) {
+    const until = new Date();
+    until.setMonth(until.getMonth() + months);
+    watch_until = until.toISOString().slice(0, 10);
+  }
 
   status.textContent = "Saving…";
   status.className = "status";
