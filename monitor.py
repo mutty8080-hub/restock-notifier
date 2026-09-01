@@ -1,4 +1,4 @@
- """
+"""
 Amazon restock + price monitor.
 Reads watchlist.json, checks each product, sends Telegram + Gmail alerts
 when a product is BOTH in stock and at/under its max_price.
