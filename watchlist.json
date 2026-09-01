@@ -16,5 +16,11 @@
     "name": "gramin",
     "max_price": 500,
     "watch_until": "2027-09-01"
+  },
+  {
+    "asin": "B07P7KFRW7",
+    "name": "ZO Skin Health | Smart Tone Sunscreen for Face with 50 SPF Protection",
+    "max_price": 12,
+    "watch_until": "2027-09-01"
   }
 ]
