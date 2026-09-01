@@ -34,5 +34,11 @@
     "name": "f",
     "max_price": 4522,
     "watch_until": "2027-09-01"
+  },
+  {
+    "asin": "B0DLZ9Z33W",
+    "name": "Bratz Fashion Pixiez Lina Collectible Fantasy Doll with Real Fashions and Accessories",
+    "max_price": 23.99,
+    "watch_until": "2027-09-01"
   }
 ]
