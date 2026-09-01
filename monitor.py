@@ -100,13 +100,23 @@ def check_product(asin):
 
     # crude in-stock check
     unavailable_markers = [
-        "Currently unavailable",
+        "currently unavailable",
         "out of stock",
-        "See all buying options",
+        "see all buying options",
+        "temporarily out of stock",
     ]
-    in_stock = not any(m.lower() in html.lower() for m in unavailable_markers)
-    has_buy_button = ("add-to-cart-button" in html) or ("buy-now-button" in html)
-    in_stock = in_stock and has_buy_button
+    html_lower = html.lower()
+    looks_unavailable = any(m in html_lower for m in unavailable_markers)
+
+    buy_indicators = [
+        "add-to-cart-button",
+        "buy-now-button",
+        "add to cart",
+        "buy now",
+    ]
+    looks_buyable = any(m in html_lower for m in buy_indicators)
+
+    in_stock = looks_buyable and not looks_unavailable
 
     # crude price extraction — Amazon changes markup often, this covers common cases
     price = None
