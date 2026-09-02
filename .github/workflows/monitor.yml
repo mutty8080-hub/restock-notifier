@@ -2,7 +2,7 @@ name: Restock Monitor
 
 on:
   schedule:
-    - cron: "*/5 * * * *"   # every 5 minutes (GitHub's practical minimum)
+    - cron: "2-59/5 * * * *"   # every 5 minutes, offset by 2 min to reduce contention
   workflow_dispatch:
     inputs:
       test:
