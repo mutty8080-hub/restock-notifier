@@ -111,7 +111,8 @@ def check_product(asin):
     # get picked up as if they were this product's price
     price = None
     core_match = re.search(
-        r'id="(corePriceDisplay_desktop_feature_div|corePrice_feature_div|apex_desktop)"[\s\S]{0,3000}',
+        r'id="(corePriceDisplay_desktop_feature_div|corePrice_feature_div|apex_desktop|'
+        r'unifiedPrice_feature_div|desktop_buybox|buyBoxAccordion|centerCol)"[\s\S]{0,8000}',
         html,
     )
     search_scope = core_match.group(0) if core_match else None
@@ -119,15 +120,20 @@ def check_product(asin):
     if search_scope:
         price_patterns = [
             r'"priceAmount":\s*([\d.]+)',
-            r'class="a-price-whole">([\d,]+)<',
+            r'class="a-price-whole">([\d,]+)<[^<]*<span class="a-price-fraction">(\d+)<',
             r'id="priceblock_ourprice"[^>]*>\s*\$([\d,.]+)',
             r'id="priceblock_dealprice"[^>]*>\s*\$([\d,.]+)',
+            r'class="a-price-whole">([\d,]+)<',
         ]
         for pat in price_patterns:
             m = re.search(pat, search_scope)
             if m:
                 try:
-                    price = float(m.group(1).replace(",", ""))
+                    if len(m.groups()) == 2:
+                        # whole + fraction captured separately (e.g. 43 + 26 -> 43.26)
+                        price = float(f"{m.group(1).replace(',', '')}.{m.group(2)}")
+                    else:
+                        price = float(m.group(1).replace(",", ""))
                     break
                 except ValueError:
                     continue
