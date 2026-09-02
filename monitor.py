@@ -253,6 +253,14 @@ def main():
 
         was_alerted = state.get(asin, {}).get("alerted", False)
 
+        state[asin] = {
+            **state.get(asin, {}),
+            "alerted": state.get(asin, {}).get("alerted", False),
+            "last_price": price,
+            "last_in_stock": in_stock,
+            "last_checked": now.strftime("%Y-%m-%d %H:%M UTC"),
+        }
+
         if condition_met and not was_alerted:
             product_url = f"https://www.amazon.com/dp/{asin}"
             price_str = f"${price:.2f}" if price is not None else "unknown price"
@@ -261,10 +269,10 @@ def main():
             print(f"    -> ALERT: {message}")
             send_telegram(message, image_url)
             send_gmail(f"Restock Alert: {title or name}", message, image_url)
-            state[asin] = {"alerted": True}
+            state[asin]["alerted"] = True
         elif not condition_met and was_alerted:
             # condition no longer true (sold out again / price rose) — reset so it can re-alert later
-            state[asin] = {"alerted": False}
+            state[asin]["alerted"] = False
 
     save_json(WATCHLIST_FILE, still_active)
     save_json(STATE_FILE, state)
