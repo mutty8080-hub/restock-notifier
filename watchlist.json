@@ -19,7 +19,7 @@
   },
   {
     "asin": "B0G1NDP85W",
-    "name": "Five Nights at Freddy\u2019s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
+    "name": "Five Nights at Freddy’s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
     "max_price": 29.99,
     "watch_until": "2027-09-01"
   },
@@ -40,5 +40,11 @@
     "name": "fischer price test",
     "max_price": 100,
     "watch_until": null
+  },
+  {
+    "asin": "B0FHL1SX3G",
+    "name": "r",
+    "max_price": 4,
+    "watch_until": "2026-10-02"
   }
 ]
