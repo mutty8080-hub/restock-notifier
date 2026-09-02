@@ -48,4 +48,5 @@ jobs:
           git add watchlist.json
           [ -f state.json ] && git add state.json
           git diff --quiet --cached || git commit -m "Update watchlist/state [skip ci]"
+          git pull --rebase origin main
           git push
