@@ -40,11 +40,5 @@
     "name": "fischer price test",
     "max_price": 100,
     "watch_until": null
-  },
-  {
-    "asin": "B0FHL1SX3G",
-    "name": "r",
-    "max_price": 4,
-    "watch_until": "2026-10-02"
   }
 ]
