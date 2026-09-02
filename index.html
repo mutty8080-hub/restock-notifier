@@ -254,6 +254,21 @@ async function fetchWatchlist() {
   return { content, sha: data.sha };
 }
 
+async function fetchState() {
+  const s = getSettings();
+  const url = `https://api.github.com/repos/${s.owner}/${s.repo}/contents/state.json`;
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: `token ${s.token}`, Accept: "application/vnd.github+json" },
+    });
+    if (!res.ok) return {};
+    const data = await res.json();
+    return JSON.parse(decodeURIComponent(escape(atob(data.content))));
+  } catch (e) {
+    return {};
+  }
+}
+
 async function pushWatchlist(list, sha, message) {
   const s = getSettings();
   const body = {
@@ -323,14 +338,14 @@ async function loadWatchlist() {
   const listEl = document.getElementById("itemList");
   listEl.innerHTML = '<div class="empty">Loading…</div>';
   try {
-    const { content } = await fetchWatchlist();
-    renderList(content);
+    const [{ content }, state] = await Promise.all([fetchWatchlist(), fetchState()]);
+    renderList(content, state);
   } catch (e) {
     listEl.innerHTML = `<div class="empty">Couldn't load list (${e.message})</div>`;
   }
 }
 
-function renderList(items) {
+function renderList(items, state = {}) {
   const listEl = document.getElementById("itemList");
   if (!items.length) {
     listEl.innerHTML = '<div class="empty">No active watches yet.</div>';
@@ -340,10 +355,18 @@ function renderList(items) {
   items.forEach((item) => {
     const div = document.createElement("div");
     div.className = "item";
+    const s = state[item.asin];
+    let statusLine = "Not checked yet";
+    if (s && s.last_checked) {
+      const priceStr = s.last_price != null ? `$${s.last_price.toFixed(2)}` : "no price found";
+      const stockStr = s.last_in_stock ? "In stock" : "Out of stock";
+      statusLine = `${stockStr} · ${priceStr} · checked ${s.last_checked}`;
+    }
     div.innerHTML = `
       <div>
         <div class="item-name">${item.name || item.asin}</div>
         <div class="item-meta">≤ $${item.max_price} · ${item.watch_until ? "until " + item.watch_until : "until turned off"}</div>
+        <div class="item-meta">${statusLine}</div>
       </div>
       <button class="danger" data-asin="${item.asin}">Remove</button>
     `;
