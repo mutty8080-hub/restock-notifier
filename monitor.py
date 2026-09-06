@@ -251,17 +251,33 @@ def main():
 
         condition_met = in_stock and (max_price is None or (price is not None and price <= max_price))
 
-        was_alerted = state.get(asin, {}).get("alerted", False)
+        prev = state.get(asin, {})
+        was_alerted = prev.get("alerted", False)
+        last_alert_price = prev.get("last_alert_price")
+        seen_spike = prev.get("seen_spike", False)
+        seen_oos = prev.get("seen_oos", False)
+
+        # track re-arm conditions since the last alert
+        if not in_stock:
+            seen_oos = True
+        elif was_alerted and last_alert_price is not None and price is not None:
+            if price >= last_alert_price + 10:
+                seen_spike = True
+
+        can_alert = (not was_alerted) or seen_spike or seen_oos
 
         state[asin] = {
-            **state.get(asin, {}),
-            "alerted": state.get(asin, {}).get("alerted", False),
+            **prev,
+            "alerted": was_alerted,
+            "last_alert_price": last_alert_price,
+            "seen_spike": seen_spike,
+            "seen_oos": seen_oos,
             "last_price": price,
             "last_in_stock": in_stock,
             "last_checked": now.strftime("%Y-%m-%d %H:%M UTC"),
         }
 
-        if condition_met and not was_alerted:
+        if condition_met and can_alert:
             product_url = f"https://www.amazon.com/dp/{asin}"
             price_str = f"${price:.2f}" if price is not None else "unknown price"
             found_at = now.strftime("%Y-%m-%d %H:%M UTC")
@@ -270,9 +286,9 @@ def main():
             send_telegram(message, image_url)
             send_gmail(f"Restock Alert: {title or name}", message, image_url)
             state[asin]["alerted"] = True
-        elif not condition_met and was_alerted:
-            # condition no longer true (sold out again / price rose) — reset so it can re-alert later
-            state[asin]["alerted"] = False
+            state[asin]["last_alert_price"] = price
+            state[asin]["seen_spike"] = False
+            state[asin]["seen_oos"] = False
 
     save_json(WATCHLIST_FILE, still_active)
     save_json(STATE_FILE, state)
