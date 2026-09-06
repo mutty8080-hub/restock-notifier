@@ -1,9 +1,12 @@
 {
   "B08LF4JDSJ": {
-    "alerted": false,
+    "alerted": true,
     "last_price": 468.0,
     "last_in_stock": true,
-    "last_checked": "2026-09-06 15:37 UTC"
+    "last_checked": "2026-09-06 17:42 UTC",
+    "last_alert_price": 468.0,
+    "seen_spike": false,
+    "seen_oos": false
   },
   "B0FHL1SX3G": {
     "alerted": false
@@ -12,30 +15,63 @@
     "alerted": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-06 15:37 UTC"
+    "last_checked": "2026-09-06 17:42 UTC",
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": true
   },
   "B000FDX0U4": {
     "alerted": false,
     "last_price": 32.0,
     "last_in_stock": true,
-    "last_checked": "2026-09-06 15:37 UTC"
+    "last_checked": "2026-09-06 17:42 UTC",
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": false
   },
   "B07P7KFRW7": {
     "alerted": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-06 15:37 UTC"
+    "last_checked": "2026-09-06 17:42 UTC",
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": true
   },
   "B0G1NDP85W": {
     "alerted": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-06 15:37 UTC"
+    "last_checked": "2026-09-06 17:42 UTC",
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": true
   },
   "B0DWG25H47": {
     "alerted": true,
     "last_price": 42.0,
     "last_in_stock": true,
-    "last_checked": "2026-09-06 15:37 UTC"
+    "last_checked": "2026-09-06 17:42 UTC",
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": false
+  },
+  "B0CHPNR1QK": {
+    "alerted": true,
+    "last_alert_price": 49.0,
+    "seen_spike": false,
+    "seen_oos": false,
+    "last_price": 49.0,
+    "last_in_stock": true,
+    "last_checked": "2026-09-06 17:42 UTC"
+  },
+  "B0BT3Q6FXY": {
+    "alerted": false,
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": true,
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-09-06 17:42 UTC"
   }
 }
