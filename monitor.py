@@ -136,10 +136,10 @@ def _check_product_once(asin):
 
     if search_scope:
         price_patterns = [
-            r'"priceAmount":\s*([\d.]+)',
             r'class="a-price-whole">([\d,]+)<[^<]*<span class="a-price-fraction">(\d+)<',
             r'id="priceblock_ourprice"[^>]*>\s*\$([\d,.]+)',
             r'id="priceblock_dealprice"[^>]*>\s*\$([\d,.]+)',
+            r'"priceAmount":\s*([\d.]+)',
             r'class="a-price-whole">([\d,]+)<',
         ]
         for pat in price_patterns:
@@ -182,35 +182,43 @@ def _check_product_once(asin):
     return in_stock, price, title, image_url, False
 
 
-def send_telegram(message, image_url=None):
+def send_telegram(message, image_url=None, buttons=None):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         print("  [!] Telegram not configured, skipping")
         return
+
+    reply_markup = None
+    if buttons:
+        reply_markup = json.dumps({"inline_keyboard": [buttons]})
+
     try:
         if image_url:
             url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
-            requests.post(
-                url,
-                data={"chat_id": TELEGRAM_CHAT_ID, "caption": message, "photo": image_url},
-                timeout=10,
-            )
+            data = {"chat_id": TELEGRAM_CHAT_ID, "caption": message, "photo": image_url}
+            if reply_markup:
+                data["reply_markup"] = reply_markup
+            requests.post(url, data=data, timeout=10)
         else:
             url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-            requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": message}, timeout=10)
+            data = {"chat_id": TELEGRAM_CHAT_ID, "text": message}
+            if reply_markup:
+                data["reply_markup"] = reply_markup
+            requests.post(url, data=data, timeout=10)
     except requests.RequestException as e:
         print(f"  [!] telegram send failed: {e}")
 
 
-def send_gmail(subject, body, image_url=None):
+def send_gmail(subject, body, image_url=None, extra_html=None):
     if not GMAIL_ADDRESS or not GMAIL_APP_PASSWORD:
         print("  [!] Gmail not configured, skipping")
         return
 
-    if image_url:
+    if image_url or extra_html:
         html_body = f"""
         <div style="font-family: sans-serif;">
           <p>{body.replace(chr(10), '<br>')}</p>
-          <img src="{image_url}" style="max-width: 400px; border-radius: 8px;">
+          {f'<img src="{image_url}" style="max-width: 400px; border-radius: 8px;">' if image_url else ''}
+          {extra_html or ''}
         </div>
         """
         msg = MIMEText(html_body, "html")
@@ -297,16 +305,22 @@ def main():
 
         if condition_met and can_alert:
             product_url = f"https://www.amazon.com/dp/{asin}"
-            manage_url = f"{PAGES_URL}?asin={asin}"
+            stop_url = f"{PAGES_URL}?asin={asin}&action=stop"
+            adjust_url = f"{PAGES_URL}?asin={asin}&action=adjust"
             price_str = f"${price:.2f}" if price is not None else "unknown price"
             found_at = now.strftime("%Y-%m-%d %H:%M UTC")
-            message = (
-                f"IN STOCK: {title or name}\n{price_str}\nFound: {found_at}\n"
-                f"{product_url}\n\nManage (remove/adjust price): {manage_url}"
+            message = f"IN STOCK: {title or name}\n{price_str}\nFound: {found_at}\n{product_url}"
+            telegram_buttons = [
+                {"text": "🛑 Stop tracking", "url": stop_url},
+                {"text": "✏️ Adjust price", "url": adjust_url},
+            ]
+            email_links = (
+                f'<p><a href="{stop_url}">Stop tracking this product</a> · '
+                f'<a href="{adjust_url}">Adjust price threshold</a></p>'
             )
             print(f"    -> ALERT: {message}")
-            send_telegram(message, image_url)
-            send_gmail(f"Restock Alert: {title or name}", message, image_url)
+            send_telegram(message, image_url, telegram_buttons)
+            send_gmail(f"Restock Alert: {title or name}", message, image_url, extra_html=email_links)
             state[asin]["alerted"] = True
             state[asin]["last_alert_price"] = price
             state[asin]["seen_spike"] = False
