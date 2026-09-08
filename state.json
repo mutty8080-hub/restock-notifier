@@ -3,8 +3,8 @@
     "alerted": true,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-08 01:12 UTC",
-    "last_alert_price": 468.0,
+    "last_checked": "2026-09-08 05:25 UTC",
+    "last_alert_price": 464.0,
     "seen_spike": false,
     "seen_oos": true
   },
@@ -21,7 +21,7 @@
     "alerted": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-08 01:12 UTC",
+    "last_checked": "2026-09-08 05:25 UTC",
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": true
@@ -30,7 +30,7 @@
     "alerted": true,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-08 01:12 UTC",
+    "last_checked": "2026-09-08 05:25 UTC",
     "last_alert_price": 21.0,
     "seen_spike": false,
     "seen_oos": true
@@ -39,7 +39,7 @@
     "alerted": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-08 01:12 UTC",
+    "last_checked": "2026-09-08 05:25 UTC",
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": true
@@ -48,28 +48,28 @@
     "alerted": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-08 01:12 UTC",
+    "last_checked": "2026-09-08 05:25 UTC",
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": true
   },
   "B0DWG25H47": {
     "alerted": true,
-    "last_price": null,
-    "last_in_stock": false,
-    "last_checked": "2026-09-08 01:12 UTC",
-    "last_alert_price": null,
+    "last_price": 42.0,
+    "last_in_stock": true,
+    "last_checked": "2026-09-08 05:25 UTC",
+    "last_alert_price": 42.0,
     "seen_spike": false,
-    "seen_oos": true
+    "seen_oos": false
   },
   "B0CHPNR1QK": {
     "alerted": true,
     "last_alert_price": 49.0,
     "seen_spike": false,
-    "seen_oos": false,
-    "last_price": 49.0,
-    "last_in_stock": true,
-    "last_checked": "2026-09-08 01:12 UTC"
+    "seen_oos": true,
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-09-08 05:25 UTC"
   },
   "B0BT3Q6FXY": {
     "alerted": false,
