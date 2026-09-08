@@ -216,7 +216,32 @@ function unlockApp() {
   if (preview && s.token) {
     preview.textContent = `Using owner: ${s.owner} · repo: ${s.repo} · token ending in …${s.token.slice(-6)}`;
   }
-  loadWatchlist();
+  loadWatchlist().then(() => handleDeepLinkAction());
+}
+
+async function handleDeepLinkAction() {
+  const params = new URLSearchParams(window.location.search);
+  const asin = params.get("asin");
+  const action = params.get("action");
+  if (!asin || !action) return;
+
+  if (action === "stop") {
+    if (confirm(`Stop tracking ${asin}?`)) {
+      await removeProduct(asin);
+      alert("Stopped tracking that product.");
+    }
+  } else if (action === "adjust") {
+    try {
+      const { content } = await fetchWatchlist();
+      const item = content.find((i) => i.asin === asin);
+      if (item) await editPrice(asin, item.max_price);
+    } catch (e) {
+      alert(`Couldn't load product: ${e.message}`);
+    }
+  }
+
+  // clean the URL so refreshing doesn't re-trigger the action
+  window.history.replaceState({}, "", window.location.pathname);
 }
 
 function resetSetup() {
