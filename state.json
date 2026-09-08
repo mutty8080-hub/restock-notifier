@@ -3,7 +3,7 @@
     "alerted": true,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-08 18:39 UTC",
+    "last_checked": "2026-09-08 21:26 UTC",
     "last_alert_price": 468.0,
     "seen_spike": false,
     "seen_oos": true
@@ -21,25 +21,25 @@
     "alerted": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-08 18:39 UTC",
+    "last_checked": "2026-09-08 21:26 UTC",
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": true
   },
   "B000FDX0U4": {
     "alerted": true,
-    "last_price": null,
-    "last_in_stock": false,
-    "last_checked": "2026-09-08 18:39 UTC",
+    "last_price": 51.0,
+    "last_in_stock": true,
+    "last_checked": "2026-09-08 21:26 UTC",
     "last_alert_price": 21.0,
-    "seen_spike": false,
+    "seen_spike": true,
     "seen_oos": true
   },
   "B07P7KFRW7": {
     "alerted": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-08 18:39 UTC",
+    "last_checked": "2026-09-08 21:26 UTC",
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": true
@@ -48,19 +48,19 @@
     "alerted": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-08 18:39 UTC",
+    "last_checked": "2026-09-08 21:26 UTC",
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": true
   },
   "B0DWG25H47": {
     "alerted": true,
-    "last_price": 42.0,
-    "last_in_stock": true,
-    "last_checked": "2026-09-08 18:39 UTC",
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-09-08 21:26 UTC",
     "last_alert_price": 42.0,
     "seen_spike": false,
-    "seen_oos": false
+    "seen_oos": true
   },
   "B0CHPNR1QK": {
     "alerted": true,
@@ -69,7 +69,7 @@
     "seen_oos": true,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-08 18:39 UTC"
+    "last_checked": "2026-09-08 21:26 UTC"
   },
   "B0BT3Q6FXY": {
     "alerted": false,
