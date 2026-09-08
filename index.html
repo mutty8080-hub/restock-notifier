@@ -351,10 +351,18 @@ function renderList(items, state = {}) {
     listEl.innerHTML = '<div class="empty">No active watches yet.</div>';
     return;
   }
+  const params = new URLSearchParams(window.location.search);
+  const highlightAsin = params.get("asin");
+
   listEl.innerHTML = "";
   items.forEach((item) => {
     const div = document.createElement("div");
     div.className = "item";
+    if (item.asin === highlightAsin) {
+      div.style.background = "#1a2333";
+      div.style.borderRadius = "8px";
+      div.style.padding = "8px";
+    }
     const s = state[item.asin];
     let statusLine = "Not checked yet";
     if (s && s.last_checked) {
@@ -368,11 +376,40 @@ function renderList(items, state = {}) {
         <div class="item-meta">≤ $${item.max_price} · ${item.watch_until ? "until " + item.watch_until : "until turned off"}</div>
         <div class="item-meta">${statusLine}</div>
       </div>
-      <button class="danger" data-asin="${item.asin}">Remove</button>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <button class="danger" data-action="remove">Remove</button>
+        <button class="secondary" data-action="edit" style="width:auto; padding:6px 10px; font-size:12px; margin:0;">Edit price</button>
+      </div>
     `;
-    div.querySelector("button").addEventListener("click", () => removeProduct(item.asin));
+    div.querySelector('[data-action="remove"]').addEventListener("click", () => removeProduct(item.asin));
+    div.querySelector('[data-action="edit"]').addEventListener("click", () => editPrice(item.asin, item.max_price));
     listEl.appendChild(div);
   });
+
+  if (highlightAsin) {
+    setTimeout(() => {
+      const target = [...listEl.children].find((el) => el.querySelector(".item-name"));
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+  }
+}
+
+async function editPrice(asin, currentPrice) {
+  const newPrice = prompt(`New alert price for this product (currently $${currentPrice}):`, currentPrice);
+  if (newPrice === null) return;
+  const parsed = parseFloat(newPrice);
+  if (isNaN(parsed)) {
+    alert("Enter a valid number.");
+    return;
+  }
+  try {
+    const { content, sha } = await fetchWatchlist();
+    const updated = content.map((i) => (i.asin === asin ? { ...i, max_price: parsed } : i));
+    await pushWatchlist(updated, sha, `Update price for ${asin}`);
+    loadWatchlist();
+  } catch (e) {
+    alert(`Failed to update: ${e.message}`);
+  }
 }
 
 async function addProduct() {
