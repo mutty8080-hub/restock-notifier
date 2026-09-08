@@ -8,9 +8,11 @@ Auto-removes products past their watch_until date.
 
 import json
 import os
+import random
 import re
 import smtplib
 import sys
+import time
 from datetime import datetime, timezone
 from email.mime.text import MIMEText
 
@@ -18,6 +20,7 @@ import requests
 
 WATCHLIST_FILE = "watchlist.json"
 STATE_FILE = "state.json"
+PAGES_URL = os.environ.get("PAGES_URL", "https://mutty8080-hub.github.io/restock-notifier/")
 
 HEADERS = {
     "User-Agent": (
@@ -75,8 +78,22 @@ def extract_asin(value):
     return value  # fall back, let it fail loudly downstream
 
 
-def check_product(asin):
-    """Returns (in_stock: bool, price: float|None, title: str|None, image_url: str|None)."""
+def check_product(asin, max_attempts=3):
+    """Retries a few times with fresh sessions/delays if blocked, before giving up."""
+    for attempt in range(1, max_attempts + 1):
+        in_stock, price, title, image_url, blocked = _check_product_once(asin)
+        if not blocked:
+            return in_stock, price, title, image_url
+        if attempt < max_attempts:
+            wait = random.uniform(2, 5) * attempt
+            print(f"    [!] attempt {attempt} blocked for {asin}, retrying in {wait:.1f}s...")
+            time.sleep(wait)
+    print(f"    [!] {asin}: still blocked after {max_attempts} attempts, giving up this run")
+    return False, None, None, None
+
+
+def _check_product_once(asin):
+    """Returns (in_stock, price, title, image_url, blocked)."""
     url = f"https://www.amazon.com/dp/{asin}"
     try:
         with requests.Session() as session:
@@ -84,11 +101,11 @@ def check_product(asin):
             resp = session.get(url, timeout=15)
     except requests.RequestException as e:
         print(f"  [!] request failed for {asin}: {e}")
-        return False, None, None, None
+        return False, None, None, None, True
 
     if resp.status_code != 200:
         print(f"  [!] status {resp.status_code} for {asin} (possibly blocked)")
-        return False, None, None, None
+        return False, None, None, None, True
 
     html = resp.text
 
@@ -96,7 +113,7 @@ def check_product(asin):
     # in the logs from a genuine "out of stock" reading
     if "api-services-support@amazon.com" in html or "Enter the characters you see below" in html:
         print(f"  [!] {asin}: got a CAPTCHA/blocked page, not the real product page")
-        return False, None, None, None
+        return False, None, None, None, True
 
     # target the specific "availability" section just for diagnostic logging
     html_lower = html.lower()
@@ -162,7 +179,7 @@ def check_product(asin):
         print(f"    [!] availability text says unavailable — overriding in_stock to False")
         in_stock = False
 
-    return in_stock, price, title, image_url
+    return in_stock, price, title, image_url, False
 
 
 def send_telegram(message, image_url=None):
@@ -246,6 +263,7 @@ def main():
         still_active.append(item)
 
         print(f"[.] checking {name} ({asin})")
+        time.sleep(random.uniform(1, 3))  # small jitter, less bot-like than instant back-to-back hits
         in_stock, price, title, image_url = check_product(asin)
         print(f"    in_stock={in_stock} price={price} image={'yes' if image_url else 'no'}")
 
@@ -279,9 +297,13 @@ def main():
 
         if condition_met and can_alert:
             product_url = f"https://www.amazon.com/dp/{asin}"
+            manage_url = f"{PAGES_URL}?asin={asin}"
             price_str = f"${price:.2f}" if price is not None else "unknown price"
             found_at = now.strftime("%Y-%m-%d %H:%M UTC")
-            message = f"IN STOCK: {title or name}\n{price_str}\nFound: {found_at}\n{product_url}"
+            message = (
+                f"IN STOCK: {title or name}\n{price_str}\nFound: {found_at}\n"
+                f"{product_url}\n\nManage (remove/adjust price): {manage_url}"
+            )
             print(f"    -> ALERT: {message}")
             send_telegram(message, image_url)
             send_gmail(f"Restock Alert: {title or name}", message, image_url)
