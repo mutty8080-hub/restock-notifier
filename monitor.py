@@ -98,7 +98,16 @@ def _check_product_once(page, asin):
     url = f"https://www.amazon.com/dp/{asin}"
     try:
         response = page.goto(url, timeout=25000, wait_until="domcontentloaded")
-        page.wait_for_timeout(random.randint(800, 1800))  # let dynamic content settle
+        page.wait_for_timeout(random.randint(800, 1500))
+        try:
+            page.wait_for_selector(
+                "#corePriceDisplay_desktop_feature_div, #corePrice_feature_div, "
+                ".a-price-whole, #priceblock_ourprice",
+                timeout=6000,
+            )
+        except Exception:
+            pass  # price element may genuinely be absent (out of stock) — proceed anyway
+        page.wait_for_timeout(random.randint(500, 1000))
     except Exception as e:
         print(f"  [!] navigation failed for {asin}: {e}")
         return False, None, None, None, True
