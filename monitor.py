@@ -118,6 +118,9 @@ def _check_product_once(page, asin):
         return False, None, None, None, True
 
     html = page.content()
+    print(f"    [debug] page length: {len(html)} chars, "
+          f"has corePriceDisplay: {'corePriceDisplay' in html}, "
+          f"has a-price-whole: {'a-price-whole' in html}")
 
     # detect a CAPTCHA/blocked page specifically, so it's distinguishable
     # in the logs from a genuine "out of stock" reading
@@ -266,11 +269,22 @@ def main():
     still_active = []
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(
+            headless=True,
+            args=["--disable-blink-features=AutomationControlled"],
+        )
         context = browser.new_context(
             user_agent=HEADERS["User-Agent"],
             locale="en-US",
             viewport={"width": 1280, "height": 900},
+        )
+        context.add_init_script(
+            """
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
+            window.chrome = { runtime: {} };
+            """
         )
         page = context.new_page()
 
