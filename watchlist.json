@@ -19,7 +19,7 @@
   },
   {
     "asin": "B0G1NDP85W",
-    "name": "Five Nights at Freddy\u2019s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
+    "name": "Five Nights at Freddy’s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
     "max_price": 29.99,
     "watch_until": "2027-09-01"
   },
@@ -57,6 +57,12 @@
     "asin": "B08LF4JDSJ",
     "name": "Garmin GT56UHD-TM Transom Mount Transducer",
     "max_price": 468.83,
+    "watch_until": null
+  },
+  {
+    "asin": "B0DLZ9Z33W",
+    "name": "Bratz Fashion Pixiez Lina Collectible Fantasy Doll with Real Fashions and Accessories",
+    "max_price": 25,
     "watch_until": null
   }
 ]
