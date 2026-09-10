@@ -140,12 +140,13 @@ def _check_product_once(page, asin):
     # page — otherwise prices from unrelated carousels/other listings can
     # get picked up as if they were this product's price
     price = None
-    core_match = re.search(
-        r'id="(corePriceDisplay_desktop_feature_div|corePrice_feature_div|apex_desktop|'
-        r'unifiedPrice_feature_div|desktop_buybox|buyBoxAccordion|centerCol)"[\s\S]{0,8000}',
-        html,
-    )
+    core_match = re.search(r'id="corePriceDisplay[^"]*"[\s\S]{0,4000}', html)
+    if not core_match:
+        core_match = re.search(r'id="[^"]*[Pp]rice[^"]*"[\s\S]{0,4000}', html)
     search_scope = core_match.group(0) if core_match else None
+    if core_match:
+        print(f"    [debug] price anchor matched, scope length: {len(search_scope)}")
+        print(f"    [debug] scope snippet: {search_scope[:200]!r}")
 
     if search_scope:
         price_patterns = [
