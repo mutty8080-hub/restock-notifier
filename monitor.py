@@ -132,7 +132,7 @@ def _check_product_once(asin):
     # page — otherwise prices from unrelated carousels/other listings can
     # get picked up as if they were this product's price
     price = None
-    core_match = re.search(r'id="corePriceDisplay[^"]*"[\s\S]{0,4000}', html)
+    core_match = re.search(r'corePriceDisplay[\s\S]{0,4000}', html)
     if not core_match:
         core_match = re.search(r'id="[^"]*[Pp]rice[^"]*"[\s\S]{0,4000}', html)
     search_scope = core_match.group(0) if core_match else None
@@ -424,3 +424,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
