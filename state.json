@@ -30,7 +30,7 @@
     "alerted": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-11 21:58 UTC",
+    "last_checked": "2026-09-11 22:40 UTC",
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": true
@@ -39,19 +39,10 @@
     "alerted": true,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-11 22:15 UTC",
+    "last_checked": "2026-09-11 22:40 UTC",
     "last_alert_price": 19.2,
     "seen_spike": false,
     "seen_oos": true
-  },
-  "B0DWG25H47": {
-    "alerted": true,
-    "last_price": 49.99,
-    "last_in_stock": true,
-    "last_checked": "2026-09-11 22:15 UTC",
-    "last_alert_price": 49.99,
-    "seen_spike": false,
-    "seen_oos": false
   },
   "B0CHPNR1QK": {
     "alerted": true,
@@ -71,7 +62,7 @@
     "last_in_stock": false,
     "last_checked": "2026-09-08 01:12 UTC"
   },
-  "_telegram_offset": 867096918,
+  "_telegram_offset": 867096926,
   "_pending_adjust": {
     "asin": "B08LF4JDSJ",
     "chat_id": 1862235033
