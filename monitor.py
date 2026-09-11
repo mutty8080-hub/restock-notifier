@@ -242,6 +242,84 @@ def send_gmail(subject, body, image_url=None, extra_html=None):
         print(f"  [!] gmail send failed: {e}")
 
 
+def answer_callback(callback_id, text=None):
+    if not TELEGRAM_BOT_TOKEN:
+        return
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/answerCallbackQuery"
+    data = {"callback_query_id": callback_id}
+    if text:
+        data["text"] = text
+    try:
+        requests.post(url, data=data, timeout=10)
+    except requests.RequestException:
+        pass
+
+
+def process_telegram_actions(watchlist, state):
+    """Polls Telegram for 'Stop tracking' / 'Adjust price' button taps and pending
+    price replies, applying them directly to the watchlist. No browser needed."""
+    if not TELEGRAM_BOT_TOKEN:
+        return watchlist
+
+    offset = state.get("_telegram_offset", 0)
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates"
+        resp = requests.get(url, params={"offset": offset, "timeout": 0}, timeout=15)
+        updates = resp.json().get("result", [])
+    except requests.RequestException as e:
+        print(f"  [!] telegram getUpdates failed: {e}")
+        return watchlist
+
+    pending_adjust = state.get("_pending_adjust")  # {"asin": ..., "chat_id": ...}
+
+    for update in updates:
+        state["_telegram_offset"] = update["update_id"] + 1
+
+        cq = update.get("callback_query")
+        if cq:
+            data = cq.get("data", "")
+            chat_id = cq["message"]["chat"]["id"]
+            if data.startswith("stop:"):
+                asin = data.split(":", 1)[1]
+                before = len(watchlist)
+                watchlist = [i for i in watchlist if extract_asin(i["asin"]) != asin]
+                state.pop(asin, None)
+                if len(watchlist) < before:
+                    answer_callback(cq["id"], "Stopped tracking.")
+                    send_telegram(f"Stopped tracking {asin}.")
+                else:
+                    answer_callback(cq["id"], "Already removed.")
+            elif data.startswith("adjust:"):
+                asin = data.split(":", 1)[1]
+                state["_pending_adjust"] = {"asin": asin, "chat_id": chat_id}
+                pending_adjust = state["_pending_adjust"]
+                answer_callback(cq["id"])
+                send_telegram(f"Reply with the new alert price for {asin} (just the number, e.g. 49.99).")
+            continue
+
+        msg = update.get("message")
+        if msg and pending_adjust and "text" in msg:
+            try:
+                new_price = float(msg["text"].strip().replace("$", ""))
+            except ValueError:
+                send_telegram("That doesn't look like a number — reply with just the price, e.g. 49.99.")
+                continue
+            asin = pending_adjust["asin"]
+            found = False
+            for item in watchlist:
+                if extract_asin(item["asin"]) == asin:
+                    item["max_price"] = new_price
+                    found = True
+            if found:
+                send_telegram(f"Updated {asin} to alert at or below ${new_price:.2f}.")
+            else:
+                send_telegram(f"Couldn't find {asin} in your watchlist anymore.")
+            state["_pending_adjust"] = None
+            pending_adjust = None
+
+    return watchlist
+
+
 def main():
     if os.environ.get("TEST_MODE") == "true":
         msg = "Test notification from your restock notifier — Telegram/Gmail are wired up correctly."
@@ -253,6 +331,10 @@ def main():
 
     watchlist = load_json(WATCHLIST_FILE, [])
     state = load_json(STATE_FILE, {})
+
+    watchlist = process_telegram_actions(watchlist, state)
+    save_json(WATCHLIST_FILE, watchlist)
+    save_json(STATE_FILE, state)
 
     if not watchlist:
         print("Watchlist is empty, nothing to do.")
@@ -321,8 +403,8 @@ def main():
             found_at = now.strftime("%Y-%m-%d %H:%M UTC")
             message = f"IN STOCK: {title or name}\n{price_str}\nFound: {found_at}\n{product_url}"
             telegram_buttons = [
-                {"text": "🛑 Stop tracking", "url": stop_url},
-                {"text": "✏️ Adjust price", "url": adjust_url},
+                {"text": "🛑 Stop tracking", "callback_data": f"stop:{asin}"},
+                {"text": "✏️ Adjust price", "callback_data": f"adjust:{asin}"},
             ]
             email_links = (
                 f'<p><a href="{stop_url}">Stop tracking this product</a> · '
