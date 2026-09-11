@@ -39,19 +39,19 @@
     "alerted": true,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-11 21:34 UTC",
+    "last_checked": "2026-09-11 22:15 UTC",
     "last_alert_price": 19.2,
     "seen_spike": false,
     "seen_oos": true
   },
   "B0DWG25H47": {
     "alerted": true,
-    "last_price": null,
-    "last_in_stock": false,
-    "last_checked": "2026-09-11 21:00 UTC",
+    "last_price": 49.99,
+    "last_in_stock": true,
+    "last_checked": "2026-09-11 22:15 UTC",
     "last_alert_price": 49.99,
     "seen_spike": false,
-    "seen_oos": true
+    "seen_oos": false
   },
   "B0CHPNR1QK": {
     "alerted": true,
