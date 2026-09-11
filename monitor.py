@@ -17,7 +17,6 @@ from datetime import datetime, timezone
 from email.mime.text import MIMEText
 
 import requests
-from playwright.sync_api import sync_playwright
 
 WATCHLIST_FILE = "watchlist.json"
 STATE_FILE = "state.json"
@@ -79,12 +78,12 @@ def extract_asin(value):
     return value  # fall back, let it fail loudly downstream
 
 
-def check_product(page, asin, max_attempts=10):
-    """Retries a few times with fresh navigations if blocked, before giving up.
+def check_product(asin, max_attempts=10):
+    """Retries a few times with fresh sessions/delays if blocked, before giving up.
     Returns (in_stock, price, title, image_url, confirmed) — confirmed=False means
     every attempt was blocked, so this run has NO real data (not "confirmed out of stock")."""
     for attempt in range(1, max_attempts + 1):
-        in_stock, price, title, image_url, blocked = _check_product_once(page, asin)
+        in_stock, price, title, image_url, blocked = _check_product_once(asin)
         if not blocked:
             return in_stock, price, title, image_url, True
         if attempt < max_attempts:
@@ -95,31 +94,22 @@ def check_product(page, asin, max_attempts=10):
     return False, None, None, None, False
 
 
-def _check_product_once(page, asin):
+def _check_product_once(asin):
     """Returns (in_stock, price, title, image_url, blocked)."""
     url = f"https://www.amazon.com/dp/{asin}"
     try:
-        response = page.goto(url, timeout=25000, wait_until="domcontentloaded")
-        page.wait_for_timeout(random.randint(800, 1500))
-        try:
-            page.wait_for_selector(
-                "#corePriceDisplay_desktop_feature_div, #corePrice_feature_div, "
-                ".a-price-whole, #priceblock_ourprice",
-                timeout=6000,
-            )
-        except Exception:
-            pass  # price element may genuinely be absent (out of stock) — proceed anyway
-        page.wait_for_timeout(random.randint(500, 1000))
-    except Exception as e:
-        print(f"  [!] navigation failed for {asin}: {e}")
+        with requests.Session() as session:
+            session.headers.update(HEADERS)
+            resp = session.get(url, timeout=15)
+    except requests.RequestException as e:
+        print(f"  [!] request failed for {asin}: {e}")
         return False, None, None, None, True
 
-    if response is None or response.status != 200:
-        status = response.status if response else "no response"
-        print(f"  [!] status {status} for {asin} (possibly blocked)")
+    if resp.status_code != 200:
+        print(f"  [!] status {resp.status_code} for {asin} (possibly blocked)")
         return False, None, None, None, True
 
-    html = page.content()
+    html = resp.text
     print(f"    [debug] page length: {len(html)} chars, "
           f"has corePriceDisplay: {'corePriceDisplay' in html}, "
           f"has a-price-whole: {'a-price-whole' in html}")
@@ -271,102 +261,80 @@ def main():
     now = datetime.now(timezone.utc)
     still_active = []
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            args=["--disable-blink-features=AutomationControlled"],
-        )
-        context = browser.new_context(
-            user_agent=HEADERS["User-Agent"],
-            locale="en-US",
-            viewport={"width": 1280, "height": 900},
-        )
-        context.add_init_script(
-            """
-            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
-            Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
-            window.chrome = { runtime: {} };
-            """
-        )
-        page = context.new_page()
+    for item in watchlist:
+        asin = extract_asin(item["asin"])
+        name = item.get("name") or asin
+        max_price = item.get("max_price")
+        watch_until = item.get("watch_until")  # "YYYY-MM-DD"
 
-        for item in watchlist:
-            asin = extract_asin(item["asin"])
-            name = item.get("name") or asin
-            max_price = item.get("max_price")
-            watch_until = item.get("watch_until")  # "YYYY-MM-DD"
-
-            if watch_until:
-                expiry = datetime.strptime(watch_until, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-                if now > expiry:
-                    print(f"[-] {name} ({asin}) expired, removing from watchlist")
-                    state.pop(asin, None)
-                    continue
-
-            still_active.append(item)
-
-            print(f"[.] checking {name} ({asin})")
-            time.sleep(random.uniform(1, 3))  # small jitter, less bot-like than instant back-to-back hits
-            in_stock, price, title, image_url, confirmed = check_product(page, asin)
-            print(f"    in_stock={in_stock} price={price} image={'yes' if image_url else 'no'} confirmed={confirmed}")
-
-            if not confirmed:
-                print(f"    [!] no confirmed data this run for {asin} — skipping alert logic, state unchanged")
+        if watch_until:
+            expiry = datetime.strptime(watch_until, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            if now > expiry:
+                print(f"[-] {name} ({asin}) expired, removing from watchlist")
+                state.pop(asin, None)
                 continue
 
-            condition_met = in_stock and (max_price is None or (price is not None and price <= max_price))
+        still_active.append(item)
 
-            prev = state.get(asin, {})
-            was_alerted = prev.get("alerted", False)
-            last_alert_price = prev.get("last_alert_price")
-            seen_spike = prev.get("seen_spike", False)
-            seen_oos = prev.get("seen_oos", False)
+        print(f"[.] checking {name} ({asin})")
+        time.sleep(random.uniform(1, 3))  # small jitter, less bot-like than instant back-to-back hits
+        in_stock, price, title, image_url, confirmed = check_product(asin)
+        print(f"    in_stock={in_stock} price={price} image={'yes' if image_url else 'no'} confirmed={confirmed}")
 
-            # track re-arm conditions since the last alert
-            if not in_stock:
-                seen_oos = True
-            elif was_alerted and last_alert_price is not None and price is not None:
-                if price >= last_alert_price + 10:
-                    seen_spike = True
+        if not confirmed:
+            print(f"    [!] no confirmed data this run for {asin} — skipping alert logic, state unchanged")
+            continue
 
-            can_alert = (not was_alerted) or seen_spike or seen_oos
+        condition_met = in_stock and (max_price is None or (price is not None and price <= max_price))
 
-            state[asin] = {
-                **prev,
-                "alerted": was_alerted,
-                "last_alert_price": last_alert_price,
-                "seen_spike": seen_spike,
-                "seen_oos": seen_oos,
-                "last_price": price,
-                "last_in_stock": in_stock,
-                "last_checked": now.strftime("%Y-%m-%d %H:%M UTC"),
-            }
+        prev = state.get(asin, {})
+        was_alerted = prev.get("alerted", False)
+        last_alert_price = prev.get("last_alert_price")
+        seen_spike = prev.get("seen_spike", False)
+        seen_oos = prev.get("seen_oos", False)
 
-            if condition_met and can_alert:
-                product_url = f"https://www.amazon.com/dp/{asin}"
-                stop_url = f"{PAGES_URL}?asin={asin}&action=stop"
-                adjust_url = f"{PAGES_URL}?asin={asin}&action=adjust"
-                price_str = f"${price:.2f}" if price is not None else "unknown price"
-                found_at = now.strftime("%Y-%m-%d %H:%M UTC")
-                message = f"IN STOCK: {title or name}\n{price_str}\nFound: {found_at}\n{product_url}"
-                telegram_buttons = [
-                    {"text": "🛑 Stop tracking", "url": stop_url},
-                    {"text": "✏️ Adjust price", "url": adjust_url},
-                ]
-                email_links = (
-                    f'<p><a href="{stop_url}">Stop tracking this product</a> · '
-                    f'<a href="{adjust_url}">Adjust price threshold</a></p>'
-                )
-                print(f"    -> ALERT: {message}")
-                send_telegram(message, image_url, telegram_buttons)
-                send_gmail(f"Restock Alert: {title or name}", message, image_url, extra_html=email_links)
-                state[asin]["alerted"] = True
-                state[asin]["last_alert_price"] = price
-                state[asin]["seen_spike"] = False
-                state[asin]["seen_oos"] = False
+        # track re-arm conditions since the last alert
+        if not in_stock:
+            seen_oos = True
+        elif was_alerted and last_alert_price is not None and price is not None:
+            if price >= last_alert_price + 10:
+                seen_spike = True
 
-        browser.close()
+        can_alert = (not was_alerted) or seen_spike or seen_oos
+
+        state[asin] = {
+            **prev,
+            "alerted": was_alerted,
+            "last_alert_price": last_alert_price,
+            "seen_spike": seen_spike,
+            "seen_oos": seen_oos,
+            "last_price": price,
+            "last_in_stock": in_stock,
+            "last_checked": now.strftime("%Y-%m-%d %H:%M UTC"),
+        }
+
+        if condition_met and can_alert:
+            product_url = f"https://www.amazon.com/dp/{asin}"
+            stop_url = f"{PAGES_URL}?asin={asin}&action=stop"
+            adjust_url = f"{PAGES_URL}?asin={asin}&action=adjust"
+            price_str = f"${price:.2f}" if price is not None else "unknown price"
+            found_at = now.strftime("%Y-%m-%d %H:%M UTC")
+            message = f"IN STOCK: {title or name}\n{price_str}\nFound: {found_at}\n{product_url}"
+            telegram_buttons = [
+                {"text": "🛑 Stop tracking", "url": stop_url},
+                {"text": "✏️ Adjust price", "url": adjust_url},
+            ]
+            email_links = (
+                f'<p><a href="{stop_url}">Stop tracking this product</a> · '
+                f'<a href="{adjust_url}">Adjust price threshold</a></p>'
+            )
+            print(f"    -> ALERT: {message}")
+            send_telegram(message, image_url, telegram_buttons)
+            send_gmail(f"Restock Alert: {title or name}", message, image_url, extra_html=email_links)
+            state[asin]["alerted"] = True
+            state[asin]["last_alert_price"] = price
+            state[asin]["seen_spike"] = False
+            state[asin]["seen_oos"] = False
 
     save_json(WATCHLIST_FILE, still_active)
     save_json(STATE_FILE, state)
