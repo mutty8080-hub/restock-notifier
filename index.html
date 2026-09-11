@@ -173,6 +173,8 @@ function init() {
   if (!s.pin || !s.owner || !s.repo || !s.token) {
     document.getElementById("lockScreen").classList.add("hidden");
     document.getElementById("setupScreen").classList.remove("hidden");
+  } else if (localStorage.getItem("rn_unlocked") === "true") {
+    unlockApp();
   }
 }
 init();
@@ -193,6 +195,7 @@ function saveSetup() {
   localStorage.setItem("rn_token", token);
 
   document.getElementById("setupScreen").classList.add("hidden");
+  localStorage.setItem("rn_unlocked", "true");
   unlockApp();
 }
 
@@ -201,6 +204,7 @@ function tryUnlock() {
   const s = getSettings();
   const status = document.getElementById("lockStatus");
   if (entered === s.pin) {
+    localStorage.setItem("rn_unlocked", "true");
     unlockApp();
   } else {
     status.textContent = "Wrong passcode.";
@@ -250,11 +254,13 @@ function resetSetup() {
   localStorage.removeItem("rn_owner");
   localStorage.removeItem("rn_repo");
   localStorage.removeItem("rn_token");
+  localStorage.removeItem("rn_unlocked");
   document.getElementById("app").classList.add("hidden");
   document.getElementById("setupScreen").classList.remove("hidden");
 }
 
 function lockApp() {
+  localStorage.removeItem("rn_unlocked");
   document.getElementById("app").classList.add("hidden");
   document.getElementById("pinInput").value = "";
   document.getElementById("lockScreen").classList.remove("hidden");
