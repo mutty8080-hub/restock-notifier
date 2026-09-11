@@ -170,10 +170,13 @@ function getSettings() {
 
 function init() {
   const s = getSettings();
+  const params = new URLSearchParams(window.location.search);
+  const hasAction = params.get("asin") && params.get("action");
+
   if (!s.pin || !s.owner || !s.repo || !s.token) {
     document.getElementById("lockScreen").classList.add("hidden");
     document.getElementById("setupScreen").classList.remove("hidden");
-  } else if (localStorage.getItem("rn_unlocked") === "true") {
+  } else if (localStorage.getItem("rn_unlocked") === "true" || hasAction) {
     unlockApp();
   }
 }
