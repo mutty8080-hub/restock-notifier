@@ -80,17 +80,19 @@ def extract_asin(value):
 
 
 def check_product(page, asin, max_attempts=10):
-    """Retries a few times with fresh navigations if blocked, before giving up."""
+    """Retries a few times with fresh navigations if blocked, before giving up.
+    Returns (in_stock, price, title, image_url, confirmed) — confirmed=False means
+    every attempt was blocked, so this run has NO real data (not "confirmed out of stock")."""
     for attempt in range(1, max_attempts + 1):
         in_stock, price, title, image_url, blocked = _check_product_once(page, asin)
         if not blocked:
-            return in_stock, price, title, image_url
+            return in_stock, price, title, image_url, True
         if attempt < max_attempts:
             wait = random.uniform(2, 5) * attempt
             print(f"    [!] attempt {attempt} blocked for {asin}, retrying in {wait:.1f}s...")
             time.sleep(wait)
     print(f"    [!] {asin}: still blocked after {max_attempts} attempts, giving up this run")
-    return False, None, None, None
+    return False, None, None, None, False
 
 
 def _check_product_once(page, asin):
@@ -306,8 +308,12 @@ def main():
 
             print(f"[.] checking {name} ({asin})")
             time.sleep(random.uniform(1, 3))  # small jitter, less bot-like than instant back-to-back hits
-            in_stock, price, title, image_url = check_product(page, asin)
-            print(f"    in_stock={in_stock} price={price} image={'yes' if image_url else 'no'}")
+            in_stock, price, title, image_url, confirmed = check_product(page, asin)
+            print(f"    in_stock={in_stock} price={price} image={'yes' if image_url else 'no'} confirmed={confirmed}")
+
+            if not confirmed:
+                print(f"    [!] no confirmed data this run for {asin} — skipping alert logic, state unchanged")
+                continue
 
             condition_met = in_stock and (max_price is None or (price is not None and price <= max_price))
 
