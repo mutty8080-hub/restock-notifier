@@ -3,7 +3,7 @@
     "alerted": true,
     "last_price": 468.83,
     "last_in_stock": true,
-    "last_checked": "2026-09-11 15:35 UTC",
+    "last_checked": "2026-09-11 15:40 UTC",
     "last_alert_price": 468.83,
     "seen_spike": false,
     "seen_oos": false
@@ -21,7 +21,7 @@
     "alerted": true,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-11 15:35 UTC",
+    "last_checked": "2026-09-11 15:40 UTC",
     "last_alert_price": 23.0,
     "seen_spike": false,
     "seen_oos": true
@@ -30,7 +30,7 @@
     "alerted": true,
     "last_price": 51.99,
     "last_in_stock": true,
-    "last_checked": "2026-09-11 15:35 UTC",
+    "last_checked": "2026-09-11 15:40 UTC",
     "last_alert_price": 21.0,
     "seen_spike": true,
     "seen_oos": true
@@ -39,7 +39,7 @@
     "alerted": false,
     "last_price": 54.0,
     "last_in_stock": true,
-    "last_checked": "2026-09-11 15:35 UTC",
+    "last_checked": "2026-09-11 15:40 UTC",
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": true
@@ -48,7 +48,7 @@
     "alerted": true,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-11 15:35 UTC",
+    "last_checked": "2026-09-11 15:40 UTC",
     "last_alert_price": 19.2,
     "seen_spike": false,
     "seen_oos": true
@@ -57,7 +57,7 @@
     "alerted": true,
     "last_price": 49.99,
     "last_in_stock": true,
-    "last_checked": "2026-09-11 15:35 UTC",
+    "last_checked": "2026-09-11 15:40 UTC",
     "last_alert_price": 49.99,
     "seen_spike": false,
     "seen_oos": false
@@ -69,7 +69,7 @@
     "seen_oos": true,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-11 15:35 UTC"
+    "last_checked": "2026-09-11 15:40 UTC"
   },
   "B0BT3Q6FXY": {
     "alerted": false,
