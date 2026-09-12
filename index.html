@@ -288,19 +288,26 @@ async function fetchWatchlist() {
   return { content, sha: data.sha };
 }
 
+const SHARD_COUNT = 3; // must match SHARD_COUNT in the workflow file
+
 async function fetchState() {
   const s = getSettings();
-  const url = `https://api.github.com/repos/${s.owner}/${s.repo}/contents/state.json`;
-  try {
-    const res = await fetch(url, {
-      headers: { Authorization: `token ${s.token}`, Accept: "application/vnd.github+json" },
-    });
-    if (!res.ok) return {};
-    const data = await res.json();
-    return JSON.parse(decodeURIComponent(escape(atob(data.content))));
-  } catch (e) {
-    return {};
+  const merged = {};
+  for (let i = 0; i < SHARD_COUNT; i++) {
+    const url = `https://api.github.com/repos/${s.owner}/${s.repo}/contents/state_shard${i}.json`;
+    try {
+      const res = await fetch(url, {
+        headers: { Authorization: `token ${s.token}`, Accept: "application/vnd.github+json" },
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const parsed = JSON.parse(decodeURIComponent(escape(atob(data.content))));
+      Object.assign(merged, parsed);
+    } catch (e) {
+      // skip this shard's file, keep merging the rest
+    }
   }
+  return merged;
 }
 
 async function pushWatchlist(list, sha, message) {
