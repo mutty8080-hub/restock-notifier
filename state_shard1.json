@@ -6,7 +6,7 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-12 17:20 UTC"
+    "last_checked": "2026-09-12 17:25 UTC"
   },
   "B07P7KFRW7": {
     "alerted": false,
@@ -15,15 +15,24 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-12 17:20 UTC"
+    "last_checked": "2026-09-12 17:25 UTC"
   },
   "B0CZSPMHJ8": {
+    "alerted": true,
+    "last_alert_price": 21.99,
+    "seen_spike": false,
+    "seen_oos": false,
+    "last_price": 21.99,
+    "last_in_stock": true,
+    "last_checked": "2026-09-12 17:25 UTC"
+  },
+  "B0DWG1TXJJ": {
     "alerted": false,
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-12 17:20 UTC"
+    "last_checked": "2026-09-12 17:25 UTC"
   }
 }
