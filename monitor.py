@@ -65,16 +65,16 @@ def save_json(path, data):
 
 
 def extract_asin(value):
-    """Accepts a raw ASIN or a full Amazon URL and returns the ASIN."""
+    """Accepts a raw ASIN or a full Amazon URL and returns the ASIN, normalized to uppercase."""
     value = value.strip()
-    match = re.search(r"/dp/([A-Z0-9]{10})", value)
+    match = re.search(r"/dp/([A-Za-z0-9]{10})", value)
     if match:
-        return match.group(1)
-    match = re.search(r"/gp/product/([A-Z0-9]{10})", value)
+        return match.group(1).upper()
+    match = re.search(r"/gp/product/([A-Za-z0-9]{10})", value)
     if match:
-        return match.group(1)
-    if re.fullmatch(r"[A-Z0-9]{10}", value):
-        return value
+        return match.group(1).upper()
+    if re.fullmatch(r"[A-Za-z0-9]{10}", value):
+        return value.upper()
     return value  # fall back, let it fail loudly downstream
 
 
@@ -266,10 +266,15 @@ def process_telegram_actions(watchlist, state):
         return watchlist
 
     offset = state.get("_telegram_offset", 0)
+    print(f"[telegram] polling for updates, current offset={offset}")
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates"
         resp = requests.get(url, params={"offset": offset, "timeout": 0}, timeout=15)
-        updates = resp.json().get("result", [])
+        data = resp.json()
+        if not data.get("ok"):
+            print(f"  [!] telegram getUpdates returned error: {data}")
+        updates = data.get("result", [])
+        print(f"[telegram] received {len(updates)} update(s)")
     except requests.RequestException as e:
         print(f"  [!] telegram getUpdates failed: {e}")
         return watchlist
@@ -277,11 +282,13 @@ def process_telegram_actions(watchlist, state):
     pending_adjust = state.get("_pending_adjust")  # {"asin": ..., "chat_id": ...}
 
     for update in updates:
+        print(f"[telegram] processing update_id={update['update_id']}, keys={list(update.keys())}")
         state["_telegram_offset"] = update["update_id"] + 1
 
         cq = update.get("callback_query")
         if cq:
             data = cq.get("data", "")
+            print(f"[telegram] callback_query data={data!r}")
             chat_id = cq["message"]["chat"]["id"]
             if data.startswith("stop:"):
                 asin = data.split(":", 1)[1]
