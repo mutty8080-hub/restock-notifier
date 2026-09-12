@@ -93,18 +93,21 @@ def extract_asin(value):
 
 def check_product(asin, max_attempts=10):
     """Retries a few times with fresh sessions/delays if blocked, before giving up.
-    Returns (in_stock, price, title, image_url, confirmed) — confirmed=False means
-    every attempt was blocked, so this run has NO real data (not "confirmed out of stock")."""
+    Returns (in_stock, price, title, image_url, definitely_unavailable, confirmed).
+    confirmed=False means every attempt was blocked (no real data this run).
+    definitely_unavailable=True only when the page explicitly said so — a plain
+    'no price found' does NOT set this, since that can also mean our parsing
+    missed it, not that the product is actually out of stock."""
     for attempt in range(1, max_attempts + 1):
-        in_stock, price, title, image_url, blocked = _check_product_once(asin)
+        in_stock, price, title, image_url, definitely_unavailable, blocked = _check_product_once(asin)
         if not blocked:
-            return in_stock, price, title, image_url, True
+            return in_stock, price, title, image_url, definitely_unavailable, True
         if attempt < max_attempts:
             wait = random.uniform(2, 5) * attempt
             print(f"    [!] attempt {attempt} blocked for {asin}, retrying in {wait:.1f}s...")
             time.sleep(wait)
     print(f"    [!] {asin}: still blocked after {max_attempts} attempts, giving up this run")
-    return False, None, None, None, False
+    return False, None, None, None, False, False
 
 
 def _check_product_once(asin):
@@ -116,11 +119,11 @@ def _check_product_once(asin):
             resp = session.get(url, timeout=15)
     except requests.RequestException as e:
         print(f"  [!] request failed for {asin}: {e}")
-        return False, None, None, None, True
+        return False, None, None, None, None, True
 
     if resp.status_code != 200:
         print(f"  [!] status {resp.status_code} for {asin} (possibly blocked)")
-        return False, None, None, None, True
+        return False, None, None, None, None, True
 
     html = resp.text
     print(f"    [debug] page length: {len(html)} chars, "
@@ -131,7 +134,7 @@ def _check_product_once(asin):
     # in the logs from a genuine "out of stock" reading
     if "api-services-support@amazon.com" in html or "Enter the characters you see below" in html:
         print(f"  [!] {asin}: got a CAPTCHA/blocked page, not the real product page")
-        return False, None, None, None, True
+        return False, None, None, None, None, True
 
     # target the specific "availability" section just for diagnostic logging
     html_lower = html.lower()
@@ -198,11 +201,14 @@ def _check_product_once(asin):
     # product as in stock — but let explicit "unavailable" text override that,
     # as a safety net against a stray/misattributed price
     in_stock = price is not None
-    if avail_match and "unavailable" in avail_match.group(1).strip().lower():
+    definitely_unavailable = bool(
+        avail_match and "unavailable" in avail_match.group(1).strip().lower()
+    )
+    if definitely_unavailable:
         print(f"    [!] availability text says unavailable — overriding in_stock to False")
         in_stock = False
 
-    return in_stock, price, title, image_url, False
+    return in_stock, price, title, image_url, definitely_unavailable, False
 
 
 def send_telegram(message, image_url=None, buttons=None):
@@ -400,8 +406,9 @@ def main():
 
         print(f"[.] checking {name} ({asin})")
         time.sleep(random.uniform(1, 3))  # small jitter, less bot-like than instant back-to-back hits
-        in_stock, price, title, image_url, confirmed = check_product(asin)
-        print(f"    in_stock={in_stock} price={price} image={'yes' if image_url else 'no'} confirmed={confirmed}")
+        in_stock, price, title, image_url, definitely_unavailable, confirmed = check_product(asin)
+        print(f"    in_stock={in_stock} price={price} image={'yes' if image_url else 'no'} "
+              f"definitely_unavailable={definitely_unavailable} confirmed={confirmed}")
 
         if not confirmed:
             print(f"    [!] no confirmed data this run for {asin} — skipping alert logic, state unchanged")
@@ -415,7 +422,7 @@ def main():
         seen_spike = prev.get("seen_spike", False)
         seen_oos = prev.get("seen_oos", False)
 
-        if not in_stock:
+        if definitely_unavailable:
             seen_oos = True
         elif was_alerted and last_alert_price is not None and price is not None:
             if price >= last_alert_price + 10:
