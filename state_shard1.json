@@ -1,0 +1,29 @@
+{
+  "B0DLZ9Z33W": {
+    "alerted": false,
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": false,
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-09-12 17:20 UTC"
+  },
+  "B07P7KFRW7": {
+    "alerted": false,
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": false,
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-09-12 17:20 UTC"
+  },
+  "B0CZSPMHJ8": {
+    "alerted": false,
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": false,
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-09-12 17:20 UTC"
+  }
+}
