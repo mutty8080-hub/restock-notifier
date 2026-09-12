@@ -6,6 +6,7 @@ Tracks alert state in state.json so you don't get spammed every run.
 Auto-removes products past their watch_until date.
 """
 
+import hashlib
 import json
 import os
 import random
@@ -19,8 +20,20 @@ from email.mime.text import MIMEText
 import requests
 
 WATCHLIST_FILE = "watchlist.json"
-STATE_FILE = "state.json"
+SHARD_INDEX = int(os.environ.get("SHARD_INDEX", "0"))
+SHARD_COUNT = int(os.environ.get("SHARD_COUNT", "1"))
+STATE_FILE = f"state_shard{SHARD_INDEX}.json"
 PAGES_URL = os.environ.get("PAGES_URL", "https://mutty8080-hub.github.io/restock-notifier/")
+
+
+def belongs_to_this_shard(asin):
+    """Stable hash-based assignment so a product always lands on the same
+    shard regardless of list order/pruning — avoids two shards double-checking
+    (or nobody checking) the same product."""
+    if SHARD_COUNT <= 1:
+        return True
+    h = int(hashlib.md5(asin.encode()).hexdigest(), 16)
+    return h % SHARD_COUNT == SHARD_INDEX
 
 HEADERS = {
     "User-Agent": (
@@ -333,6 +346,9 @@ def process_telegram_actions(watchlist, state):
 
 def main():
     if os.environ.get("TEST_MODE") == "true":
+        if SHARD_INDEX != 0:
+            print(f"[shard {SHARD_INDEX}] test mode — only shard 0 sends the test notification, skipping.")
+            return
         msg = "Test notification from your restock notifier — Telegram/Gmail are wired up correctly."
         print("Running in TEST_MODE, sending test notification...")
         send_telegram(msg)
@@ -343,31 +359,44 @@ def main():
     watchlist = load_json(WATCHLIST_FILE, [])
     state = load_json(STATE_FILE, {})
 
-    watchlist = process_telegram_actions(watchlist, state)
-    save_json(WATCHLIST_FILE, watchlist)
-    save_json(STATE_FILE, state)
+    # only shard 0 handles telegram button actions and prunes expired products —
+    # both edit the SHARED watchlist.json, so only one shard should touch it
+    if SHARD_INDEX == 0:
+        watchlist = process_telegram_actions(watchlist, state)
+
+        now_prune = datetime.now(timezone.utc)
+        pruned = []
+        for item in watchlist:
+            watch_until = item.get("watch_until")
+            if watch_until:
+                expiry = datetime.strptime(watch_until, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                if now_prune > expiry:
+                    print(f"[-] {item.get('name', item['asin'])} expired, removing from watchlist")
+                    continue
+            pruned.append(item)
+        watchlist = pruned
+        save_json(WATCHLIST_FILE, watchlist)
 
     if not watchlist:
         print("Watchlist is empty, nothing to do.")
+        save_json(STATE_FILE, state)
         return
 
     now = datetime.now(timezone.utc)
-    still_active = []
+    my_items = [item for item in watchlist if belongs_to_this_shard(extract_asin(item["asin"]))]
+    print(f"[shard {SHARD_INDEX}/{SHARD_COUNT}] handling {len(my_items)} of {len(watchlist)} total product(s)")
 
-    for item in watchlist:
+    for item in my_items:
         asin = extract_asin(item["asin"])
         name = item.get("name") or asin
         max_price = item.get("max_price")
-        watch_until = item.get("watch_until")  # "YYYY-MM-DD"
+        watch_until = item.get("watch_until")
 
+        # local re-check in case this shard's copy predates shard 0's pruning this same run
         if watch_until:
             expiry = datetime.strptime(watch_until, "%Y-%m-%d").replace(tzinfo=timezone.utc)
             if now > expiry:
-                print(f"[-] {name} ({asin}) expired, removing from watchlist")
-                state.pop(asin, None)
                 continue
-
-        still_active.append(item)
 
         print(f"[.] checking {name} ({asin})")
         time.sleep(random.uniform(1, 3))  # small jitter, less bot-like than instant back-to-back hits
@@ -386,7 +415,6 @@ def main():
         seen_spike = prev.get("seen_spike", False)
         seen_oos = prev.get("seen_oos", False)
 
-        # track re-arm conditions since the last alert
         if not in_stock:
             seen_oos = True
         elif was_alerted and last_alert_price is not None and price is not None:
@@ -429,7 +457,6 @@ def main():
             state[asin]["seen_spike"] = False
             state[asin]["seen_oos"] = False
 
-    save_json(WATCHLIST_FILE, still_active)
     save_json(STATE_FILE, state)
 
 
