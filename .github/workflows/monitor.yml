@@ -20,7 +20,14 @@ concurrency:
 
 jobs:
   check:
+    # Skip the extra shards entirely during a manual test run — only shard 0
+    # needs to spin up to send the single test notification.
+    if: ${{ !(github.event.inputs.test == 'true' && matrix.shard != 0) }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]  # 3 parallel shards — raise this list (and SHARD_COUNT below) to scale further
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -33,13 +40,15 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run monitor
+      - name: Run monitor (shard ${{ matrix.shard }})
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           TEST_MODE: ${{ github.event.inputs.test }}
+          SHARD_INDEX: ${{ matrix.shard }}
+          SHARD_COUNT: 3
         run: python monitor.py
 
       - name: Commit updated watchlist/state
@@ -47,7 +56,7 @@ jobs:
           git config user.name "restock-bot"
           git config user.email "actions@users.noreply.github.com"
           git add watchlist.json
-          [ -f state.json ] && git add state.json
-          git diff --quiet --cached || git commit -m "Update watchlist/state [skip ci]"
+          [ -f state_shard${{ matrix.shard }}.json ] && git add state_shard${{ matrix.shard }}.json
+          git diff --quiet --cached || git commit -m "Update watchlist/state (shard ${{ matrix.shard }}) [skip ci]"
           git pull --rebase -X ours origin main
           git push
