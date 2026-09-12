@@ -12,7 +12,7 @@
     "alerted": true,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-12 16:15 UTC",
+    "last_checked": "2026-09-12 16:20 UTC",
     "last_alert_price": 23.4,
     "seen_spike": false,
     "seen_oos": true
@@ -21,7 +21,7 @@
     "alerted": true,
     "last_price": 48.35,
     "last_in_stock": true,
-    "last_checked": "2026-09-12 16:15 UTC",
+    "last_checked": "2026-09-12 16:20 UTC",
     "last_alert_price": 21.0,
     "seen_spike": true,
     "seen_oos": true
@@ -30,7 +30,7 @@
     "alerted": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-12 16:15 UTC",
+    "last_checked": "2026-09-12 16:20 UTC",
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": true
@@ -39,7 +39,7 @@
     "alerted": true,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-12 16:15 UTC",
+    "last_checked": "2026-09-12 16:20 UTC",
     "last_alert_price": 19.2,
     "seen_spike": false,
     "seen_oos": true
@@ -51,7 +51,7 @@
     "seen_oos": true,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-12 16:15 UTC"
+    "last_checked": "2026-09-12 16:20 UTC"
   },
   "B0BT3Q6FXY": {
     "alerted": false,
@@ -62,19 +62,10 @@
     "last_in_stock": false,
     "last_checked": "2026-09-08 01:12 UTC"
   },
-  "_telegram_offset": 867096933,
+  "_telegram_offset": 867096937,
   "_pending_adjust": {
     "asin": "B09VBJP8P2",
     "chat_id": 1862235033
-  },
-  "B0CFZC39YQ": {
-    "alerted": true,
-    "last_alert_price": 99.95,
-    "seen_spike": false,
-    "seen_oos": true,
-    "last_price": null,
-    "last_in_stock": false,
-    "last_checked": "2026-09-12 16:15 UTC"
   },
   "B08HGB2G1P": {
     "alerted": false,
@@ -83,6 +74,6 @@
     "seen_oos": true,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-12 16:15 UTC"
+    "last_checked": "2026-09-12 16:20 UTC"
   }
 }
