@@ -20,9 +20,6 @@ concurrency:
 
 jobs:
   check:
-    # Skip the extra shards entirely during a manual test run — only shard 0
-    # needs to spin up to send the single test notification.
-    if: ${{ !(github.event.inputs.test == 'true' && matrix.shard != 0) }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
