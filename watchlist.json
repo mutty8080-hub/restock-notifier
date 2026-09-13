@@ -13,7 +13,7 @@
   },
   {
     "asin": "B0G1NDP85W",
-    "name": "Five Nights at Freddy\u2019s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
+    "name": "Five Nights at Freddy’s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
     "max_price": 29.99,
     "watch_until": "2027-09-01"
   },
@@ -117,6 +117,12 @@
     "asin": "B07C51MD68",
     "name": "Force Factor Volcano Extreme Pre-Workout Nitric Oxide Booster for Men",
     "max_price": 40,
+    "watch_until": null
+  },
+  {
+    "asin": "B00C0E7G1K",
+    "name": "Funko POP Movies: Chucky Vinyl Figure",
+    "max_price": 20,
     "watch_until": null
   }
 ]
