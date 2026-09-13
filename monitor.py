@@ -92,15 +92,16 @@ def extract_asin(value):
     return value  # fall back, let it fail loudly downstream
 
 
-def check_product(asin, max_attempts=10):
-    """Retries a few times with fresh sessions/delays if blocked, before giving up.
+def check_product(asin, session, max_attempts=10):
+    """Retries a few times with the SAME session (cookies persist across retries,
+    mimicking a real browsing session) before giving up.
     Returns (in_stock, price, title, image_url, definitely_unavailable, confirmed).
     confirmed=False means every attempt was blocked (no real data this run).
     definitely_unavailable=True only when the page explicitly said so — a plain
     'no price found' does NOT set this, since that can also mean our parsing
     missed it, not that the product is actually out of stock."""
     for attempt in range(1, max_attempts + 1):
-        in_stock, price, title, image_url, definitely_unavailable, blocked = _check_product_once(asin)
+        in_stock, price, title, image_url, definitely_unavailable, blocked = _check_product_once(asin, session)
         if not blocked:
             return in_stock, price, title, image_url, definitely_unavailable, True
         if attempt < max_attempts:
@@ -111,13 +112,11 @@ def check_product(asin, max_attempts=10):
     return False, None, None, None, False, False
 
 
-def _check_product_once(asin):
+def _check_product_once(asin, session):
     """Returns (in_stock, price, title, image_url, blocked)."""
     url = f"https://www.amazon.com/dp/{asin}"
     try:
-        with requests.Session() as session:
-            session.headers.update(HEADERS)
-            resp = session.get(url, timeout=15)
+        resp = session.get(url, timeout=15)
     except requests.RequestException as e:
         print(f"  [!] request failed for {asin}: {e}")
         return False, None, None, None, None, True
@@ -300,6 +299,9 @@ def main():
         watchlist = pruned
         save_json(WATCHLIST_FILE, watchlist)
 
+    session = requests.Session()
+    session.headers.update(HEADERS)
+
     check_asin = os.environ.get("CHECK_ASIN", "").strip().upper()
     if check_asin:
         if SHARD_INDEX != 0:
@@ -311,7 +313,7 @@ def main():
             print(f"[immediate check] {check_asin} not found in watchlist, nothing to do")
             return
         now = datetime.now(timezone.utc)
-        check_and_maybe_alert(item, state, now)
+        check_and_maybe_alert(item, state, now, session)
         save_json(STATE_FILE, state)
         return
 
@@ -325,12 +327,12 @@ def main():
     print(f"[shard {SHARD_INDEX}/{SHARD_COUNT}] handling {len(my_items)} of {len(watchlist)} total product(s)")
 
     for item in my_items:
-        check_and_maybe_alert(item, state, now)
+        check_and_maybe_alert(item, state, now, session)
 
     save_json(STATE_FILE, state)
 
 
-def check_and_maybe_alert(item, state, now):
+def check_and_maybe_alert(item, state, now, session):
     asin = extract_asin(item["asin"])
     name = item.get("name") or asin
     max_price = item.get("max_price")
@@ -344,7 +346,7 @@ def check_and_maybe_alert(item, state, now):
 
     print(f"[.] checking {name} ({asin})")
     time.sleep(random.uniform(1, 3))  # small jitter, less bot-like than instant back-to-back hits
-    in_stock, price, title, image_url, definitely_unavailable, confirmed = check_product(asin)
+    in_stock, price, title, image_url, definitely_unavailable, confirmed = check_product(asin, session)
     print(f"    in_stock={in_stock} price={price} image={'yes' if image_url else 'no'} "
           f"definitely_unavailable={definitely_unavailable} confirmed={confirmed}")
 
