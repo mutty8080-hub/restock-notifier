@@ -264,8 +264,6 @@ def send_gmail(subject, body, image_url=None, extra_html=None):
     except Exception as e:
         print(f"  [!] gmail send failed: {e}")
 
-    return watchlist
-
 
 def main():
     if os.environ.get("TEST_MODE") == "true":
