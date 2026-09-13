@@ -24,6 +24,7 @@ SHARD_INDEX = int(os.environ.get("SHARD_INDEX", "0"))
 SHARD_COUNT = int(os.environ.get("SHARD_COUNT", "1"))
 STATE_FILE = f"state_shard{SHARD_INDEX}.json"
 PAGES_URL = os.environ.get("PAGES_URL", "https://mutty8080-hub.github.io/restock-notifier/")
+VERCEL_ACTION_URL = os.environ.get("VERCEL_ACTION_URL")  # e.g. https://your-project.vercel.app/api/action
 
 
 def belongs_to_this_shard(asin):
@@ -264,89 +265,6 @@ def send_gmail(subject, body, image_url=None, extra_html=None):
     except Exception as e:
         print(f"  [!] gmail send failed: {e}")
 
-
-def answer_callback(callback_id, text=None):
-    if not TELEGRAM_BOT_TOKEN:
-        return
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/answerCallbackQuery"
-    data = {"callback_query_id": callback_id}
-    if text:
-        data["text"] = text
-    try:
-        requests.post(url, data=data, timeout=10)
-    except requests.RequestException:
-        pass
-
-
-def process_telegram_actions(watchlist, state):
-    """Polls Telegram for 'Stop tracking' / 'Adjust price' button taps and pending
-    price replies, applying them directly to the watchlist. No browser needed."""
-    if not TELEGRAM_BOT_TOKEN:
-        return watchlist
-
-    offset = state.get("_telegram_offset", 0)
-    print(f"[telegram] polling for updates, current offset={offset}")
-    try:
-        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates"
-        resp = requests.get(url, params={"offset": offset, "timeout": 0}, timeout=15)
-        data = resp.json()
-        if not data.get("ok"):
-            print(f"  [!] telegram getUpdates returned error: {data}")
-        updates = data.get("result", [])
-        print(f"[telegram] received {len(updates)} update(s)")
-    except requests.RequestException as e:
-        print(f"  [!] telegram getUpdates failed: {e}")
-        return watchlist
-
-    pending_adjust = state.get("_pending_adjust")  # {"asin": ..., "chat_id": ...}
-
-    for update in updates:
-        print(f"[telegram] processing update_id={update['update_id']}, keys={list(update.keys())}")
-        state["_telegram_offset"] = update["update_id"] + 1
-
-        cq = update.get("callback_query")
-        if cq:
-            data = cq.get("data", "")
-            print(f"[telegram] callback_query data={data!r}")
-            chat_id = cq["message"]["chat"]["id"]
-            if data.startswith("stop:"):
-                asin = data.split(":", 1)[1]
-                before = len(watchlist)
-                watchlist = [i for i in watchlist if extract_asin(i["asin"]) != asin]
-                state.pop(asin, None)
-                if len(watchlist) < before:
-                    answer_callback(cq["id"], "Stopped tracking.")
-                    send_telegram(f"Stopped tracking {asin}.")
-                else:
-                    answer_callback(cq["id"], "Already removed.")
-            elif data.startswith("adjust:"):
-                asin = data.split(":", 1)[1]
-                state["_pending_adjust"] = {"asin": asin, "chat_id": chat_id}
-                pending_adjust = state["_pending_adjust"]
-                answer_callback(cq["id"])
-                send_telegram(f"Reply with the new alert price for {asin} (just the number, e.g. 49.99).")
-            continue
-
-        msg = update.get("message")
-        if msg and pending_adjust and "text" in msg:
-            try:
-                new_price = float(msg["text"].strip().replace("$", ""))
-            except ValueError:
-                send_telegram("That doesn't look like a number — reply with just the price, e.g. 49.99.")
-                continue
-            asin = pending_adjust["asin"]
-            found = False
-            for item in watchlist:
-                if extract_asin(item["asin"]) == asin:
-                    item["max_price"] = new_price
-                    found = True
-            if found:
-                send_telegram(f"Updated {asin} to alert at or below ${new_price:.2f}.")
-            else:
-                send_telegram(f"Couldn't find {asin} in your watchlist anymore.")
-            state["_pending_adjust"] = None
-            pending_adjust = None
-
     return watchlist
 
 
@@ -365,11 +283,10 @@ def main():
     watchlist = load_json(WATCHLIST_FILE, [])
     state = load_json(STATE_FILE, {})
 
-    # only shard 0 handles telegram button actions and prunes expired products —
-    # both edit the SHARED watchlist.json, so only one shard should touch it
+    # only shard 0 prunes expired products, since it edits the SHARED
+    # watchlist.json — Telegram/Gmail stop-adjust actions are now handled
+    # instantly by the Vercel webhook instead of polling here
     if SHARD_INDEX == 0:
-        watchlist = process_telegram_actions(watchlist, state)
-
         now_prune = datetime.now(timezone.utc)
         pruned = []
         for item in watchlist:
@@ -383,6 +300,21 @@ def main():
         watchlist = pruned
         save_json(WATCHLIST_FILE, watchlist)
 
+    check_asin = os.environ.get("CHECK_ASIN", "").strip().upper()
+    if check_asin:
+        if SHARD_INDEX != 0:
+            print(f"[shard {SHARD_INDEX}] immediate check mode — only shard 0 handles this, skipping.")
+            return
+        print(f"[immediate check] looking for {check_asin} in watchlist")
+        item = next((i for i in watchlist if extract_asin(i["asin"]) == check_asin), None)
+        if not item:
+            print(f"[immediate check] {check_asin} not found in watchlist, nothing to do")
+            return
+        now = datetime.now(timezone.utc)
+        check_and_maybe_alert(item, state, now)
+        save_json(STATE_FILE, state)
+        return
+
     if not watchlist:
         print("Watchlist is empty, nothing to do.")
         save_json(STATE_FILE, state)
@@ -393,78 +325,86 @@ def main():
     print(f"[shard {SHARD_INDEX}/{SHARD_COUNT}] handling {len(my_items)} of {len(watchlist)} total product(s)")
 
     for item in my_items:
-        asin = extract_asin(item["asin"])
-        name = item.get("name") or asin
-        max_price = item.get("max_price")
-        watch_until = item.get("watch_until")
-
-        # local re-check in case this shard's copy predates shard 0's pruning this same run
-        if watch_until:
-            expiry = datetime.strptime(watch_until, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            if now > expiry:
-                continue
-
-        print(f"[.] checking {name} ({asin})")
-        time.sleep(random.uniform(1, 3))  # small jitter, less bot-like than instant back-to-back hits
-        in_stock, price, title, image_url, definitely_unavailable, confirmed = check_product(asin)
-        print(f"    in_stock={in_stock} price={price} image={'yes' if image_url else 'no'} "
-              f"definitely_unavailable={definitely_unavailable} confirmed={confirmed}")
-
-        if not confirmed:
-            print(f"    [!] no confirmed data this run for {asin} — skipping alert logic, state unchanged")
-            continue
-
-        condition_met = in_stock and (max_price is None or (price is not None and price <= max_price))
-
-        prev = state.get(asin, {})
-        was_alerted = prev.get("alerted", False)
-        last_alert_price = prev.get("last_alert_price")
-        seen_spike = prev.get("seen_spike", False)
-        seen_oos = prev.get("seen_oos", False)
-
-        if definitely_unavailable:
-            seen_oos = True
-        elif was_alerted and last_alert_price is not None and price is not None:
-            if price >= last_alert_price + 10:
-                seen_spike = True
-
-        can_alert = (not was_alerted) or seen_spike or seen_oos
-
-        state[asin] = {
-            **prev,
-            "alerted": was_alerted,
-            "last_alert_price": last_alert_price,
-            "seen_spike": seen_spike,
-            "seen_oos": seen_oos,
-            "last_price": price,
-            "last_in_stock": in_stock,
-            "last_checked": now.strftime("%Y-%m-%d %H:%M UTC"),
-        }
-
-        if condition_met and can_alert:
-            product_url = f"https://www.amazon.com/dp/{asin}"
-            stop_url = f"{PAGES_URL}?asin={asin}&action=stop"
-            adjust_url = f"{PAGES_URL}?asin={asin}&action=adjust"
-            price_str = f"${price:.2f}" if price is not None else "unknown price"
-            found_at = now.strftime("%Y-%m-%d %H:%M UTC")
-            message = f"IN STOCK: {title or name}\n{price_str}\nFound: {found_at}\n{product_url}"
-            telegram_buttons = [
-                {"text": "🛑 Stop tracking", "callback_data": f"stop:{asin}"},
-                {"text": "✏️ Adjust price", "callback_data": f"adjust:{asin}"},
-            ]
-            email_links = (
-                f'<p><a href="{stop_url}">Stop tracking this product</a> · '
-                f'<a href="{adjust_url}">Adjust price threshold</a></p>'
-            )
-            print(f"    -> ALERT: {message}")
-            send_telegram(message, image_url, telegram_buttons)
-            send_gmail(f"Restock Alert: {title or name}", message, image_url, extra_html=email_links)
-            state[asin]["alerted"] = True
-            state[asin]["last_alert_price"] = price
-            state[asin]["seen_spike"] = False
-            state[asin]["seen_oos"] = False
+        check_and_maybe_alert(item, state, now)
 
     save_json(STATE_FILE, state)
+
+
+def check_and_maybe_alert(item, state, now):
+    asin = extract_asin(item["asin"])
+    name = item.get("name") or asin
+    max_price = item.get("max_price")
+    watch_until = item.get("watch_until")
+
+    # local re-check in case this shard's copy predates shard 0's pruning this same run
+    if watch_until:
+        expiry = datetime.strptime(watch_until, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        if now > expiry:
+            return
+
+    print(f"[.] checking {name} ({asin})")
+    time.sleep(random.uniform(1, 3))  # small jitter, less bot-like than instant back-to-back hits
+    in_stock, price, title, image_url, definitely_unavailable, confirmed = check_product(asin)
+    print(f"    in_stock={in_stock} price={price} image={'yes' if image_url else 'no'} "
+          f"definitely_unavailable={definitely_unavailable} confirmed={confirmed}")
+
+    if not confirmed:
+        print(f"    [!] no confirmed data this run for {asin} — skipping alert logic, state unchanged")
+        return
+
+    condition_met = in_stock and (max_price is None or (price is not None and price <= max_price))
+
+    prev = state.get(asin, {})
+    was_alerted = prev.get("alerted", False)
+    last_alert_price = prev.get("last_alert_price")
+    seen_spike = prev.get("seen_spike", False)
+    seen_oos = prev.get("seen_oos", False)
+
+    if definitely_unavailable:
+        seen_oos = True
+    elif was_alerted and last_alert_price is not None and price is not None:
+        if price >= last_alert_price + 10:
+            seen_spike = True
+
+    can_alert = (not was_alerted) or seen_spike or seen_oos
+
+    state[asin] = {
+        **prev,
+        "alerted": was_alerted,
+        "last_alert_price": last_alert_price,
+        "seen_spike": seen_spike,
+        "seen_oos": seen_oos,
+        "last_price": price,
+        "last_in_stock": in_stock,
+        "last_checked": now.strftime("%Y-%m-%d %H:%M UTC"),
+    }
+
+    if condition_met and can_alert:
+        product_url = f"https://www.amazon.com/dp/{asin}"
+        if VERCEL_ACTION_URL:
+            stop_url = f"{VERCEL_ACTION_URL}?asin={asin}&do=stop"
+            adjust_url = f"{VERCEL_ACTION_URL}?asin={asin}&do=adjust"
+        else:
+            stop_url = f"{PAGES_URL}?asin={asin}&action=stop"
+            adjust_url = f"{PAGES_URL}?asin={asin}&action=adjust"
+        price_str = f"${price:.2f}" if price is not None else "unknown price"
+        found_at = now.strftime("%Y-%m-%d %H:%M UTC")
+        message = f"IN STOCK: {title or name}\n{price_str}\nFound: {found_at}\n{product_url}"
+        telegram_buttons = [
+            {"text": "🛑 Stop tracking", "callback_data": f"stop:{asin}"},
+            {"text": "✏️ Adjust price", "callback_data": f"adjust:{asin}"},
+        ]
+        email_links = (
+            f'<p><a href="{stop_url}">Stop tracking this product</a> · '
+            f'<a href="{adjust_url}">Adjust price threshold</a></p>'
+        )
+        print(f"    -> ALERT: {message}")
+        send_telegram(message, image_url, telegram_buttons)
+        send_gmail(f"Restock Alert: {title or name}", message, image_url, extra_html=email_links)
+        state[asin]["alerted"] = True
+        state[asin]["last_alert_price"] = price
+        state[asin]["seen_spike"] = False
+        state[asin]["seen_oos"] = False
 
 
 if __name__ == "__main__":
