@@ -479,6 +479,14 @@ async function addProduct() {
 
   try {
     const { content, sha } = await fetchWatchlist();
+
+    const alreadyTracked = content.some((i) => extractAsin(i.asin) === asin);
+    if (alreadyTracked) {
+      status.textContent = "Already tracking this product — skipped duplicate.";
+      status.className = "status err";
+      return;
+    }
+
     content.push({ asin, name: name || asin, max_price: maxPrice, watch_until });
     await pushWatchlist(content, sha, `Add ${name || asin} to watchlist`);
     status.textContent = "Added.";
