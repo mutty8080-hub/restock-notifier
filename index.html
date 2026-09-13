@@ -471,6 +471,20 @@ async function editPrice(asin, currentPrice) {
   }
 }
 
+async function triggerImmediateCheck(asin) {
+  const s = getSettings();
+  try {
+    const url = `https://api.github.com/repos/${s.owner}/${s.repo}/actions/workflows/monitor.yml/dispatches`;
+    await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `token ${s.token}`, Accept: "application/vnd.github+json" },
+      body: JSON.stringify({ ref: "main", inputs: { check_asin: asin } }),
+    });
+  } catch (e) {
+    // non-critical — the regular ~5 min schedule will still pick it up
+  }
+}
+
 async function addProduct() {
   const status = document.getElementById("addStatus");
   const asinRaw = document.getElementById("asinInput").value.trim();
@@ -507,12 +521,13 @@ async function addProduct() {
 
     content.push({ asin, name: name || asin, max_price: maxPrice, watch_until });
     await pushWatchlist(content, sha, `Add ${name || asin} to watchlist`);
-    status.textContent = "Added.";
+    status.textContent = "Added — checking it now…";
     status.className = "status ok";
     document.getElementById("asinInput").value = "";
     document.getElementById("nameInput").value = "";
     document.getElementById("priceInput").value = "";
     renderList(content);
+    triggerImmediateCheck(asin);
   } catch (e) {
     status.textContent = `Failed: ${e.message}`;
     status.className = "status err";
