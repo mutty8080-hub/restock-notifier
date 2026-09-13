@@ -10,6 +10,10 @@ on:
         description: "Send a test notification instead of checking products"
         type: boolean
         default: false
+      check_asin:
+        description: "Immediately check just this one ASIN (used right after adding a product)"
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -43,7 +47,9 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          VERCEL_ACTION_URL: ${{ secrets.VERCEL_ACTION_URL }}
           TEST_MODE: ${{ github.event.inputs.test }}
+          CHECK_ASIN: ${{ github.event.inputs.check_asin }}
           SHARD_INDEX: ${{ matrix.shard }}
           SHARD_COUNT: 3
         run: python monitor.py
