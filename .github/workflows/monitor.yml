@@ -55,5 +55,13 @@ jobs:
           git add watchlist.json
           [ -f state_shard${{ matrix.shard }}.json ] && git add state_shard${{ matrix.shard }}.json
           git diff --quiet --cached || git commit -m "Update watchlist/state (shard ${{ matrix.shard }}) [skip ci]"
-          git pull --rebase -X ours origin main
-          git push
+
+          for i in 1 2 3 4 5; do
+            git pull --rebase -X ours origin main
+            if git push; then
+              echo "Push succeeded on attempt $i"
+              break
+            fi
+            echo "Push failed (attempt $i), retrying after a short random delay..."
+            sleep $((RANDOM % 5 + 1))
+          done
