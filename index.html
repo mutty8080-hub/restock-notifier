@@ -168,7 +168,25 @@ function getSettings() {
   };
 }
 
+const VERCEL_ACTION_URL = ""; // paste your Vercel URL here, e.g. "https://restock-webhook.vercel.app/api/action"
+
+function redirectOldActionLinks() {
+  const params = new URLSearchParams(window.location.search);
+  const asin = params.get("asin");
+  const action = params.get("action"); // old param name from previously-sent emails
+  if (asin && action && VERCEL_ACTION_URL) {
+    const doValue = action === "stop" ? "stop" : action === "adjust" ? "adjust" : null;
+    if (doValue) {
+      window.location.replace(`${VERCEL_ACTION_URL}?asin=${encodeURIComponent(asin)}&do=${doValue}`);
+      return true;
+    }
+  }
+  return false;
+}
+
 function init() {
+  if (redirectOldActionLinks()) return; // bounce old email links to the new instant backend
+
   const s = getSettings();
   const params = new URLSearchParams(window.location.search);
   const hasAction = params.get("asin") && params.get("action");
