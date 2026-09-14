@@ -15,7 +15,7 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-14 01:37 UTC"
+    "last_checked": "2026-09-14 02:56 UTC"
   },
   "B0CZSPMHJ8": {
     "alerted": true,
@@ -49,8 +49,8 @@
     "last_alert_price": 7.99,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 7.99,
-    "last_in_stock": true,
-    "last_checked": "2026-09-14 02:02 UTC"
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-09-14 02:56 UTC"
   }
 }
