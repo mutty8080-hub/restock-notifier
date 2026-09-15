@@ -6,7 +6,7 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-15 11:45 UTC"
+    "last_checked": "2026-09-15 12:27 UTC"
   },
   "_telegram_offset": 867096944,
   "B0DYKCRFTB": {
@@ -27,17 +27,17 @@
     "last_alert_price": 32.29,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 32.29,
-    "last_in_stock": true,
-    "last_checked": "2026-09-15 12:10 UTC"
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-09-15 12:27 UTC"
   },
   "B00C0E7G1K": {
     "alerted": true,
     "last_alert_price": 14.39,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 14.39,
+    "last_price": 10.0,
     "last_in_stock": true,
-    "last_checked": "2026-09-15 12:10 UTC"
+    "last_checked": "2026-09-15 12:27 UTC"
   }
 }
