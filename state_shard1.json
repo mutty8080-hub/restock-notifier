@@ -4,9 +4,9 @@
     "last_alert_price": 23.4,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": null,
-    "last_in_stock": false,
-    "last_checked": "2026-09-15 00:56 UTC"
+    "last_price": 23.4,
+    "last_in_stock": true,
+    "last_checked": "2026-09-15 01:36 UTC"
   },
   "B07P7KFRW7": {
     "alerted": false,
@@ -51,6 +51,6 @@
     "seen_oos": false,
     "last_price": 7.99,
     "last_in_stock": true,
-    "last_checked": "2026-09-15 00:56 UTC"
+    "last_checked": "2026-09-15 01:36 UTC"
   }
 }
