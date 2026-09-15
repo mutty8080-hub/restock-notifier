@@ -6,7 +6,7 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-15 01:36 UTC"
+    "last_checked": "2026-09-15 01:58 UTC"
   },
   "B000FDX0U4": {
     "alerted": false,
@@ -24,15 +24,15 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-15 01:14 UTC"
+    "last_checked": "2026-09-15 01:58 UTC"
   },
   "B08HGFPTXZ": {
     "alerted": true,
     "last_alert_price": 11.45,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 11.52,
-    "last_in_stock": true,
-    "last_checked": "2026-09-15 01:36 UTC"
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-09-15 01:58 UTC"
   }
 }
