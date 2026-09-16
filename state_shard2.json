@@ -13,9 +13,9 @@
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": null,
-    "last_in_stock": false,
-    "last_checked": "2026-09-16 09:19 UTC"
+    "last_price": 48.35,
+    "last_in_stock": true,
+    "last_checked": "2026-09-16 10:21 UTC"
   },
   "B08HGB2G1P": {
     "alerted": false,
