@@ -6,17 +6,17 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-16 06:16 UTC"
+    "last_checked": "2026-09-16 09:19 UTC"
   },
   "_telegram_offset": 867096944,
   "B0DYKCRFTB": {
     "alerted": true,
     "last_alert_price": 15.99,
-    "seen_spike": true,
+    "seen_spike": false,
     "seen_oos": false,
-    "last_price": 15266.0,
+    "last_price": 15.99,
     "last_in_stock": true,
-    "last_checked": "2026-09-16 05:48 UTC"
+    "last_checked": "2026-09-16 09:19 UTC"
   },
   "_pending_adjust": {
     "asin": "B00HXGGOA4",
