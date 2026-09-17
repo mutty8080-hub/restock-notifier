@@ -43,5 +43,14 @@
     "last_price": null,
     "last_in_stock": false,
     "last_checked": "2026-09-17 08:49 UTC"
+  },
+  "B08614SFJ6": {
+    "alerted": true,
+    "last_alert_price": 16.19,
+    "seen_spike": false,
+    "seen_oos": false,
+    "last_price": 16.19,
+    "last_in_stock": true,
+    "last_checked": "2026-09-17 20:11 UTC"
   }
 }
