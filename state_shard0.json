@@ -1,12 +1,12 @@
 {
   "B0CHPNR1QK": {
-    "alerted": false,
-    "last_alert_price": null,
+    "alerted": true,
+    "last_alert_price": 44.9,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": null,
-    "last_in_stock": false,
-    "last_checked": "2026-09-16 10:21 UTC"
+    "last_price": 44.9,
+    "last_in_stock": true,
+    "last_checked": "2026-09-17 07:21 UTC"
   },
   "_telegram_offset": 867096944,
   "B0DYKCRFTB": {
