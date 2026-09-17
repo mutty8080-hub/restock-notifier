@@ -102,7 +102,7 @@ def extract_asin(value):
     return value  # fall back, let it fail loudly downstream
 
 
-def check_product(asin, session, max_attempts=10):
+def check_product(asin, session, max_attempts=5):
     """Retries a few times with the SAME session (cookies persist across retries,
     mimicking a real browsing session) before giving up.
     Returns (in_stock, price, title, image_url, definitely_unavailable, confirmed).
@@ -221,7 +221,7 @@ def _check_product_once(asin, session):
     return in_stock, price, title, image_url, definitely_unavailable, False
 
 
-def check_kohls(url, session, max_attempts=10):
+def check_kohls(url, session, max_attempts=5):
     """Retries a few times with the SAME session before giving up.
     Returns (in_stock, price, title, image_url, definitely_unavailable, confirmed)."""
     for attempt in range(1, max_attempts + 1):
