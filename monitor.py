@@ -27,13 +27,23 @@ PAGES_URL = os.environ.get("PAGES_URL", "https://mutty8080-hub.github.io/restock
 VERCEL_ACTION_URL = os.environ.get("VERCEL_ACTION_URL")  # e.g. https://your-project.vercel.app/api/action
 
 
-def belongs_to_this_shard(asin):
+def get_item_id(item):
+    """Stable identifier for a watchlist item, used for state tracking and
+    sharding — an ASIN for Amazon items, a stored id (set at add-time by the
+    UI) for Kohls and future non-Amazon marketplaces."""
+    marketplace = item.get("marketplace", "amazon")
+    if marketplace == "amazon":
+        return extract_asin(item["asin"])
+    return item["id"]
+
+
+def belongs_to_this_shard(item_id):
     """Stable hash-based assignment so a product always lands on the same
     shard regardless of list order/pruning — avoids two shards double-checking
     (or nobody checking) the same product."""
     if SHARD_COUNT <= 1:
         return True
-    h = int(hashlib.md5(asin.encode()).hexdigest(), 16)
+    h = int(hashlib.md5(item_id.encode()).hexdigest(), 16)
     return h % SHARD_COUNT == SHARD_INDEX
 
 HEADERS = {
@@ -211,6 +221,104 @@ def _check_product_once(asin, session):
     return in_stock, price, title, image_url, definitely_unavailable, False
 
 
+def check_kohls(url, session, max_attempts=10):
+    """Retries a few times with the SAME session before giving up.
+    Returns (in_stock, price, title, image_url, definitely_unavailable, confirmed)."""
+    for attempt in range(1, max_attempts + 1):
+        in_stock, price, title, image_url, definitely_unavailable, blocked = _check_kohls_once(url, session)
+        if not blocked:
+            return in_stock, price, title, image_url, definitely_unavailable, True
+        if attempt < max_attempts:
+            wait = random.uniform(2, 5) * attempt
+            print(f"    [!] attempt {attempt} blocked for Kohls URL, retrying in {wait:.1f}s...")
+            time.sleep(wait)
+    print(f"    [!] still blocked after {max_attempts} attempts, giving up this run")
+    return False, None, None, None, False, False
+
+
+def _check_kohls_once(url, session):
+    """Returns (in_stock, price, title, image_url, definitely_unavailable, blocked)."""
+    try:
+        resp = session.get(url, timeout=15)
+    except requests.RequestException as e:
+        print(f"  [!] request failed for Kohls URL: {e}")
+        return False, None, None, None, None, True
+
+    if resp.status_code != 200:
+        print(f"  [!] status {resp.status_code} for Kohls URL (possibly blocked)")
+        return False, None, None, None, None, True
+
+    html = resp.text
+    print(f"    [debug] page length: {len(html)} chars")
+
+    # generic bot-block detection (Kohls, like most large retailers, uses
+    # Akamai/PerimeterX-style challenge pages)
+    lower = html.lower()
+    if "are you a human" in lower or "captcha" in lower or "access denied" in lower:
+        print(f"  [!] got a CAPTCHA/blocked page, not the real product page")
+        return False, None, None, None, None, True
+
+    # Kohls (like most modern e-commerce sites) embeds structured product
+    # data as JSON-LD for search engines — far more reliable than hunting
+    # for the right HTML widget by trial and error.
+    price = None
+    title = None
+    image_url = None
+    availability_raw = None
+
+    for block_match in re.finditer(
+        r'<script[^>]*type="application/ld\+json"[^>]*>([\s\S]*?)</script>', html
+    ):
+        raw = block_match.group(1).strip()
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+
+        candidates = data if isinstance(data, list) else [data]
+        for entry in candidates:
+            if not isinstance(entry, dict):
+                continue
+            entry_type = entry.get("@type", "")
+            if isinstance(entry_type, list):
+                is_product = "Product" in entry_type
+            else:
+                is_product = entry_type == "Product"
+            if not is_product:
+                continue
+
+            title = entry.get("name", title)
+            image_field = entry.get("image")
+            if isinstance(image_field, list) and image_field:
+                image_url = image_field[0]
+            elif isinstance(image_field, str):
+                image_url = image_field
+
+            offers = entry.get("offers")
+            if isinstance(offers, list) and offers:
+                offers = offers[0]
+            if isinstance(offers, dict):
+                price_val = offers.get("price")
+                if price_val is not None:
+                    try:
+                        price = float(price_val)
+                    except (ValueError, TypeError):
+                        pass
+                availability_raw = offers.get("availability", availability_raw)
+
+    if availability_raw:
+        print(f"    availability (JSON-LD): '{availability_raw}'")
+
+    definitely_unavailable = bool(
+        availability_raw and "outofstock" in availability_raw.lower().replace(" ", "")
+    )
+    in_stock = price is not None and not definitely_unavailable
+    if not price:
+        print(f"    [debug] no JSON-LD product price found on this page")
+
+    return in_stock, price, title, image_url, definitely_unavailable, False
+
+
 def send_telegram(message, image_url=None, buttons=None):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         print("  [!] Telegram not configured, skipping")
@@ -291,7 +399,7 @@ def main():
             if watch_until:
                 expiry = datetime.strptime(watch_until, "%Y-%m-%d").replace(tzinfo=timezone.utc)
                 if now_prune > expiry:
-                    print(f"[-] {item.get('name', item['asin'])} expired, removing from watchlist")
+                    print(f"[-] {item.get('name', get_item_id(item))} expired, removing from watchlist")
                     continue
             pruned.append(item)
         watchlist = pruned
@@ -306,7 +414,7 @@ def main():
             print(f"[shard {SHARD_INDEX}] immediate check mode — only shard 0 handles this, skipping.")
             return
         print(f"[immediate check] looking for {check_asin} in watchlist")
-        item = next((i for i in watchlist if extract_asin(i["asin"]) == check_asin), None)
+        item = next((i for i in watchlist if get_item_id(i).upper() == check_asin), None)
         if not item:
             print(f"[immediate check] {check_asin} not found in watchlist, nothing to do")
             return
@@ -321,7 +429,7 @@ def main():
         return
 
     now = datetime.now(timezone.utc)
-    my_items = [item for item in watchlist if belongs_to_this_shard(extract_asin(item["asin"]))]
+    my_items = [item for item in watchlist if belongs_to_this_shard(get_item_id(item))]
     print(f"[shard {SHARD_INDEX}/{SHARD_COUNT}] handling {len(my_items)} of {len(watchlist)} total product(s)")
 
     for item in my_items:
@@ -331,8 +439,9 @@ def main():
 
 
 def check_and_maybe_alert(item, state, now, session):
-    asin = extract_asin(item["asin"])
-    name = item.get("name") or asin
+    marketplace = item.get("marketplace", "amazon")
+    item_id = get_item_id(item)
+    name = item.get("name") or item_id
     max_price = item.get("max_price")
     watch_until = item.get("watch_until")
 
@@ -342,19 +451,24 @@ def check_and_maybe_alert(item, state, now, session):
         if now > expiry:
             return
 
-    print(f"[.] checking {name} ({asin})")
+    print(f"[.] checking {name} ({item_id}) [{marketplace}]")
     time.sleep(random.uniform(1, 3))  # small jitter, less bot-like than instant back-to-back hits
-    in_stock, price, title, image_url, definitely_unavailable, confirmed = check_product(asin, session)
+
+    if marketplace == "kohls":
+        in_stock, price, title, image_url, definitely_unavailable, confirmed = check_kohls(item["url"], session)
+    else:
+        in_stock, price, title, image_url, definitely_unavailable, confirmed = check_product(item_id, session)
+
     print(f"    in_stock={in_stock} price={price} image={'yes' if image_url else 'no'} "
           f"definitely_unavailable={definitely_unavailable} confirmed={confirmed}")
 
     if not confirmed:
-        print(f"    [!] no confirmed data this run for {asin} — skipping alert logic, state unchanged")
+        print(f"    [!] no confirmed data this run for {item_id} — skipping alert logic, state unchanged")
         return
 
     condition_met = in_stock and (max_price is None or (price is not None and price <= max_price))
 
-    prev = state.get(asin, {})
+    prev = state.get(item_id, {})
     was_alerted = prev.get("alerted", False)
     last_alert_price = prev.get("last_alert_price")
     seen_spike = prev.get("seen_spike", False)
@@ -368,7 +482,7 @@ def check_and_maybe_alert(item, state, now, session):
 
     can_alert = (not was_alerted) or seen_spike or seen_oos
 
-    state[asin] = {
+    state[item_id] = {
         **prev,
         "alerted": was_alerted,
         "last_alert_price": last_alert_price,
@@ -380,19 +494,19 @@ def check_and_maybe_alert(item, state, now, session):
     }
 
     if condition_met and can_alert:
-        product_url = f"https://www.amazon.com/dp/{asin}"
+        product_url = f"https://www.amazon.com/dp/{item_id}" if marketplace == "amazon" else item["url"]
         if VERCEL_ACTION_URL:
-            stop_url = f"{VERCEL_ACTION_URL}?asin={asin}&do=stop"
-            adjust_url = f"{VERCEL_ACTION_URL}?asin={asin}&do=adjust"
+            stop_url = f"{VERCEL_ACTION_URL}?asin={item_id}&do=stop"
+            adjust_url = f"{VERCEL_ACTION_URL}?asin={item_id}&do=adjust"
         else:
-            stop_url = f"{PAGES_URL}?asin={asin}&action=stop"
-            adjust_url = f"{PAGES_URL}?asin={asin}&action=adjust"
+            stop_url = f"{PAGES_URL}?asin={item_id}&action=stop"
+            adjust_url = f"{PAGES_URL}?asin={item_id}&action=adjust"
         price_str = f"${price:.2f}" if price is not None else "unknown price"
         found_at = now.strftime("%Y-%m-%d %H:%M UTC")
         message = f"IN STOCK: {title or name}\n{price_str}\nFound: {found_at}\n{product_url}"
         telegram_buttons = [
-            {"text": "🛑 Stop tracking", "callback_data": f"stop:{asin}"},
-            {"text": "✏️ Adjust price", "callback_data": f"adjust:{asin}"},
+            {"text": "🛑 Stop tracking", "callback_data": f"stop:{item_id}"},
+            {"text": "✏️ Adjust price", "callback_data": f"adjust:{item_id}"},
         ]
         email_links = (
             f'<p><a href="{stop_url}">Stop tracking this product</a> · '
@@ -401,10 +515,10 @@ def check_and_maybe_alert(item, state, now, session):
         print(f"    -> ALERT: {message}")
         send_telegram(message, image_url, telegram_buttons)
         send_gmail(f"Restock Alert: {title or name}", message, image_url, extra_html=email_links)
-        state[asin]["alerted"] = True
-        state[asin]["last_alert_price"] = price
-        state[asin]["seen_spike"] = False
-        state[asin]["seen_oos"] = False
+        state[item_id]["alerted"] = True
+        state[item_id]["last_alert_price"] = price
+        state[item_id]["seen_spike"] = False
+        state[item_id]["seen_oos"] = False
 
 
 if __name__ == "__main__":
