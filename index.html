@@ -120,7 +120,12 @@
   <!-- MAIN APP -->
   <div id="app" class="hidden">
     <div class="card">
-      <label for="asinInput">Product ASIN or Amazon link</label>
+      <label for="marketplaceInput">Marketplace</label>
+      <select id="marketplaceInput" onchange="toggleMarketplaceFields()">
+        <option value="amazon">Amazon</option>
+        <option value="kohls">Kohls</option>
+      </select>
+      <label id="asinLabel" for="asinInput">Product ASIN or Amazon link</label>
       <input id="asinInput" type="text" placeholder="B0XXXXXXXX or full link">
       <label for="nameInput">Name (optional, for your reference)</label>
       <input id="nameInput" type="text" placeholder="Product A">
@@ -258,7 +263,7 @@ async function handleDeepLinkAction() {
   } else if (action === "adjust") {
     try {
       const { content } = await fetchWatchlist();
-      const item = content.find((i) => i.asin === asin);
+      const item = content.find((i) => getItemId(i) === asin);
       if (item) await editPrice(asin, item.max_price);
     } catch (e) {
       alert(`Couldn't load product: ${e.message}`);
@@ -393,6 +398,25 @@ function extractAsin(value) {
   return value.toUpperCase();
 }
 
+function toggleMarketplaceFields() {
+  const marketplace = document.getElementById("marketplaceInput").value;
+  const label = document.getElementById("asinLabel");
+  const input = document.getElementById("asinInput");
+  if (marketplace === "kohls") {
+    label.textContent = "Kohls product URL";
+    input.placeholder = "https://www.kohls.com/product/prd-.../....html";
+  } else {
+    label.textContent = "Product ASIN or Amazon link";
+    input.placeholder = "B0XXXXXXXX or full link";
+  }
+}
+
+function getItemId(item) {
+  const marketplace = item.marketplace || "amazon";
+  if (marketplace === "amazon") return extractAsin(item.asin);
+  return item.id; // Kohls (and future non-Amazon) items store their own id at add-time
+}
+
 async function loadWatchlist() {
   const listEl = document.getElementById("itemList");
   listEl.innerHTML = '<div class="empty">Loading…</div>';
@@ -415,23 +439,25 @@ function renderList(items, state = {}) {
 
   listEl.innerHTML = "";
   items.forEach((item) => {
+    const id = getItemId(item);
     const div = document.createElement("div");
     div.className = "item";
-    if (item.asin === highlightAsin) {
+    if (id === highlightAsin) {
       div.style.background = "#1a2333";
       div.style.borderRadius = "8px";
       div.style.padding = "8px";
     }
-    const s = state[item.asin];
+    const s = state[id];
     let statusLine = "Not checked yet";
     if (s && s.last_checked) {
       const priceStr = s.last_price != null ? `$${s.last_price.toFixed(2)}` : "no price found";
       const stockStr = s.last_in_stock ? "In stock" : "Out of stock";
       statusLine = `${stockStr} · ${priceStr} · checked ${s.last_checked}`;
     }
+    const marketplaceLabel = item.marketplace === "kohls" ? "Kohls" : "Amazon";
     div.innerHTML = `
       <div>
-        <div class="item-name">${item.name || item.asin}</div>
+        <div class="item-name">${item.name || id} <span style="color:var(--muted); font-weight:400;">(${marketplaceLabel})</span></div>
         <div class="item-meta">≤ $${item.max_price} · ${item.watch_until ? "until " + item.watch_until : "until turned off"}</div>
         <div class="item-meta">${statusLine}</div>
       </div>
@@ -440,8 +466,8 @@ function renderList(items, state = {}) {
         <button class="secondary" data-action="edit" style="width:auto; padding:6px 10px; font-size:12px; margin:0;">Edit price</button>
       </div>
     `;
-    div.querySelector('[data-action="remove"]').addEventListener("click", () => removeProduct(item.asin));
-    div.querySelector('[data-action="edit"]').addEventListener("click", () => editPrice(item.asin, item.max_price));
+    div.querySelector('[data-action="remove"]').addEventListener("click", () => removeProduct(id));
+    div.querySelector('[data-action="edit"]').addEventListener("click", () => editPrice(id, item.max_price));
     listEl.appendChild(div);
   });
 
@@ -453,7 +479,7 @@ function renderList(items, state = {}) {
   }
 }
 
-async function editPrice(asin, currentPrice) {
+async function editPrice(itemId, currentPrice) {
   const newPrice = prompt(`New alert price for this product (currently $${currentPrice}):`, currentPrice);
   if (newPrice === null) return;
   const parsed = parseFloat(newPrice);
@@ -463,8 +489,8 @@ async function editPrice(asin, currentPrice) {
   }
   try {
     const { content, sha } = await fetchWatchlist();
-    const updated = content.map((i) => (i.asin === asin ? { ...i, max_price: parsed } : i));
-    await pushWatchlist(updated, sha, `Update price for ${asin}`);
+    const updated = content.map((i) => (getItemId(i) === itemId ? { ...i, max_price: parsed } : i));
+    await pushWatchlist(updated, sha, `Update price for ${itemId}`);
     loadWatchlist();
   } catch (e) {
     alert(`Failed to update: ${e.message}`);
@@ -487,18 +513,18 @@ async function triggerImmediateCheck(asin) {
 
 async function addProduct() {
   const status = document.getElementById("addStatus");
-  const asinRaw = document.getElementById("asinInput").value.trim();
+  const marketplace = document.getElementById("marketplaceInput").value;
+  const inputRaw = document.getElementById("asinInput").value.trim();
   const name = document.getElementById("nameInput").value.trim();
   const maxPrice = parseFloat(document.getElementById("priceInput").value);
   const months = parseInt(document.getElementById("durationInput").value, 10);
 
-  if (!asinRaw || isNaN(maxPrice)) {
-    status.textContent = "ASIN/link and max price are required.";
+  if (!inputRaw || isNaN(maxPrice)) {
+    status.textContent = "Product info and max price are required.";
     status.className = "status err";
     return;
   }
 
-  const asin = extractAsin(asinRaw);
   let watch_until = null;
   if (months > 0) {
     const until = new Date();
@@ -512,33 +538,43 @@ async function addProduct() {
   try {
     const { content, sha } = await fetchWatchlist();
 
-    const alreadyTracked = content.some((i) => extractAsin(i.asin) === asin);
+    let newItem;
+    if (marketplace === "kohls") {
+      const id = `kohls-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+      newItem = { marketplace: "kohls", id, url: inputRaw, name: name || "Kohls product", max_price: maxPrice, watch_until };
+    } else {
+      const asin = extractAsin(inputRaw);
+      newItem = { marketplace: "amazon", asin, name: name || asin, max_price: maxPrice, watch_until };
+    }
+    const newId = getItemId(newItem);
+
+    const alreadyTracked = content.some((i) => getItemId(i) === newId);
     if (alreadyTracked) {
       status.textContent = "Already tracking this product — skipped duplicate.";
       status.className = "status err";
       return;
     }
 
-    content.push({ asin, name: name || asin, max_price: maxPrice, watch_until });
-    await pushWatchlist(content, sha, `Add ${name || asin} to watchlist`);
+    content.push(newItem);
+    await pushWatchlist(content, sha, `Add ${newItem.name} to watchlist`);
     status.textContent = "Added — checking it now…";
     status.className = "status ok";
     document.getElementById("asinInput").value = "";
     document.getElementById("nameInput").value = "";
     document.getElementById("priceInput").value = "";
     renderList(content);
-    triggerImmediateCheck(asin);
+    if (marketplace === "amazon") triggerImmediateCheck(newId); // instant-check only supported for Amazon so far
   } catch (e) {
     status.textContent = `Failed: ${e.message}`;
     status.className = "status err";
   }
 }
 
-async function removeProduct(asin) {
+async function removeProduct(itemId) {
   try {
     const { content, sha } = await fetchWatchlist();
-    const updated = content.filter((i) => i.asin !== asin);
-    await pushWatchlist(updated, sha, `Remove ${asin} from watchlist`);
+    const updated = content.filter((i) => getItemId(i) !== itemId);
+    await pushWatchlist(updated, sha, `Remove ${itemId} from watchlist`);
     renderList(updated);
   } catch (e) {
     alert(`Failed to remove: ${e.message}`);
