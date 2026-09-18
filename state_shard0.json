@@ -57,5 +57,14 @@
     "last_price": 21.99,
     "last_in_stock": true,
     "last_checked": "2026-09-18 03:22 UTC"
+  },
+  "B0G3QJ3FGL": {
+    "alerted": false,
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": false,
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-09-18 04:38 UTC"
   }
 }
