@@ -13,7 +13,7 @@
   },
   {
     "asin": "B0G1NDP85W",
-    "name": "Five Nights at Freddy\u2019s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
+    "name": "Five Nights at Freddy’s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
     "max_price": 29.99,
     "watch_until": "2027-09-01"
   },
@@ -109,7 +109,7 @@
   },
   {
     "asin": "B0G1NDP85W",
-    "name": "Five Nights at Freddy\u2019s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
+    "name": "Five Nights at Freddy’s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
     "max_price": 30,
     "watch_until": null
   },
@@ -151,7 +151,7 @@
   },
   {
     "asin": "B0FJYJW74Z",
-    "name": "Jazwares Five Nights at Freddy\u2019s Toy Chica Plush - 8-Inch Stuffie with Soft Material and Glow-in-The-Dark Eyes",
+    "name": "Jazwares Five Nights at Freddy’s Toy Chica Plush - 8-Inch Stuffie with Soft Material and Glow-in-The-Dark Eyes",
     "max_price": 20,
     "watch_until": null
   },
@@ -159,6 +159,14 @@
     "asin": "B0GF2J84R2",
     "name": "Bratz Bratziez Sweetheartz Plush Blind Box with Charm Clip and Accessory, Collectible Characters",
     "max_price": 50,
+    "watch_until": null
+  },
+  {
+    "marketplace": "kohls",
+    "id": "kohls-mu7ok42d9btkqt",
+    "url": "https://www.kohls.com/product/prd-8065215/celebrate-together-disneys-mickey-mouse-led-pumpkin-table-decor.jsp",
+    "name": "Celebrate Together™ Disney's Mickey Mouse LED Pumpkin Table Decor",
+    "max_price": 30,
     "watch_until": null
   }
 ]
