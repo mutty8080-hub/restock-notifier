@@ -311,7 +311,7 @@ async function fetchWatchlist() {
   return { content, sha: data.sha };
 }
 
-const SHARD_COUNT = 3; // must match SHARD_COUNT in the workflow file
+const SHARD_COUNT = 5; // must match SHARD_COUNT in the workflow file
 
 async function fetchState() {
   const s = getSettings();
