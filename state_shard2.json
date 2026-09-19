@@ -61,5 +61,14 @@
     "last_price": 43.01,
     "last_in_stock": true,
     "last_checked": "2026-09-19 15:18 UTC"
+  },
+  "B0FHJ77N8Y": {
+    "alerted": true,
+    "last_alert_price": 22.0,
+    "seen_spike": false,
+    "seen_oos": false,
+    "last_price": 22.0,
+    "last_in_stock": true,
+    "last_checked": "2026-09-19 21:10 UTC"
   }
 }
