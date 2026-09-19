@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2]  # 3 parallel shards — raise this list (and SHARD_COUNT below) to scale further
+        shard: [0, 1, 2, 3, 4]  # 5 parallel shards — raise this list (and SHARD_COUNT below) to scale further
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
           TEST_MODE: ${{ github.event.inputs.test }}
           CHECK_ASIN: ${{ github.event.inputs.check_asin }}
           SHARD_INDEX: ${{ matrix.shard }}
-          SHARD_COUNT: 3
+          SHARD_COUNT: 5
         run: python monitor.py
 
       - name: Commit updated watchlist/state
