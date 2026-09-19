@@ -238,8 +238,13 @@ def check_kohls(url, session, max_attempts=5):
 
 def _check_kohls_once(url, session):
     """Returns (in_stock, price, title, image_url, definitely_unavailable, blocked)."""
+    kohls_headers = {
+        "Sec-Fetch-Site": "none",  # direct navigation, not arriving from another site
+        "Sec-Fetch-User": "?1",
+        "Referer": None,  # override/remove the Amazon-tuned Referer set on the shared session
+    }
     try:
-        resp = session.get(url, timeout=15)
+        resp = session.get(url, timeout=15, headers=kohls_headers)
     except requests.RequestException as e:
         print(f"  [!] request failed for Kohls URL: {e}")
         return False, None, None, None, None, True
