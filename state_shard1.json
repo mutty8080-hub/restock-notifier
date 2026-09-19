@@ -51,15 +51,15 @@
     "seen_oos": false,
     "last_price": 7.99,
     "last_in_stock": true,
-    "last_checked": "2026-09-19 02:11 UTC"
+    "last_checked": "2026-09-19 05:16 UTC"
   },
   "B0FJYJW74Z": {
     "alerted": true,
     "last_alert_price": 18.03,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 18.03,
+    "last_price": 18.09,
     "last_in_stock": true,
-    "last_checked": "2026-09-19 04:40 UTC"
+    "last_checked": "2026-09-19 05:16 UTC"
   }
 }
