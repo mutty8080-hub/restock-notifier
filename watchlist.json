@@ -175,5 +175,13 @@
     "name": "Bratz Charmz Jade Fashion Doll with Collectible Charm Bracelet",
     "max_price": 22.97,
     "watch_until": null
+  },
+  {
+    "marketplace": "kohls",
+    "id": "kohls-mu8jn8k7kl3xdb",
+    "url": "https://www.kohls.com/product/prd-6875840/ninja-air-fryer-pro-xl-6-in-1-with-65-qt-capacity-nonstick-basket-crisper-plate.jsp",
+    "name": "Ninja Air Fryer Pro XL 6-in-1 with 6.5-qt. Capacity, Nonstick Basket & Crisper Plate",
+    "max_price": 200,
+    "watch_until": null
   }
 ]
