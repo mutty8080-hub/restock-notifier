@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 from email.mime.text import MIMEText
 
 import requests
+from playwright.sync_api import sync_playwright  # used only for Kohls — see check_kohls
 
 WATCHLIST_FILE = "watchlist.json"
 SHARD_INDEX = int(os.environ.get("SHARD_INDEX", "0"))
@@ -221,11 +222,11 @@ def _check_product_once(asin, session):
     return in_stock, price, title, image_url, definitely_unavailable, False
 
 
-def check_kohls(url, session, max_attempts=5):
-    """Retries a few times with the SAME session before giving up.
+def check_kohls(url, page, max_attempts=5):
+    """Retries a few times with the SAME Playwright page before giving up.
     Returns (in_stock, price, title, image_url, definitely_unavailable, confirmed)."""
     for attempt in range(1, max_attempts + 1):
-        in_stock, price, title, image_url, definitely_unavailable, blocked = _check_kohls_once(url, session)
+        in_stock, price, title, image_url, definitely_unavailable, blocked = _check_kohls_once(url, page)
         if not blocked:
             return in_stock, price, title, image_url, definitely_unavailable, True
         if attempt < max_attempts:
@@ -236,24 +237,21 @@ def check_kohls(url, session, max_attempts=5):
     return False, None, None, None, False, False
 
 
-def _check_kohls_once(url, session):
+def _check_kohls_once(url, page):
     """Returns (in_stock, price, title, image_url, definitely_unavailable, blocked)."""
-    kohls_headers = {
-        "Sec-Fetch-Site": "none",  # direct navigation, not arriving from another site
-        "Sec-Fetch-User": "?1",
-        "Referer": None,  # override/remove the Amazon-tuned Referer set on the shared session
-    }
     try:
-        resp = session.get(url, timeout=15, headers=kohls_headers)
-    except requests.RequestException as e:
-        print(f"  [!] request failed for Kohls URL: {e}")
+        response = page.goto(url, timeout=25000, wait_until="domcontentloaded")
+        page.wait_for_timeout(random.randint(800, 1500))
+    except Exception as e:
+        print(f"  [!] navigation failed for Kohls URL: {e}")
         return False, None, None, None, None, True
 
-    if resp.status_code != 200:
-        print(f"  [!] status {resp.status_code} for Kohls URL (possibly blocked)")
+    if response is None or response.status != 200:
+        status = response.status if response else "no response"
+        print(f"  [!] status {status} for Kohls URL (possibly blocked)")
         return False, None, None, None, None, True
 
-    html = resp.text
+    html = page.content()
     print(f"    [debug] page length: {len(html)} chars")
 
     # generic bot-block detection (Kohls, like most large retailers, uses
@@ -414,36 +412,46 @@ def main():
     session.headers.update(HEADERS)
 
     check_asin = os.environ.get("CHECK_ASIN", "").strip().upper()
-    if check_asin:
-        if SHARD_INDEX != 0:
-            print(f"[shard {SHARD_INDEX}] immediate check mode — only shard 0 handles this, skipping.")
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            user_agent=HEADERS["User-Agent"],
+            locale="en-US",
+            viewport={"width": 1280, "height": 900},
+        )
+        page = context.new_page()
+
+        if check_asin:
+            if SHARD_INDEX != 0:
+                print(f"[shard {SHARD_INDEX}] immediate check mode — only shard 0 handles this, skipping.")
+                return
+            print(f"[immediate check] looking for {check_asin} in watchlist")
+            item = next((i for i in watchlist if get_item_id(i).upper() == check_asin), None)
+            if not item:
+                print(f"[immediate check] {check_asin} not found in watchlist, nothing to do")
+                return
+            now = datetime.now(timezone.utc)
+            check_and_maybe_alert(item, state, now, session, page)
+            save_json(STATE_FILE, state)
             return
-        print(f"[immediate check] looking for {check_asin} in watchlist")
-        item = next((i for i in watchlist if get_item_id(i).upper() == check_asin), None)
-        if not item:
-            print(f"[immediate check] {check_asin} not found in watchlist, nothing to do")
+
+        if not watchlist:
+            print("Watchlist is empty, nothing to do.")
+            save_json(STATE_FILE, state)
             return
+
         now = datetime.now(timezone.utc)
-        check_and_maybe_alert(item, state, now, session)
+        my_items = [item for item in watchlist if belongs_to_this_shard(get_item_id(item))]
+        print(f"[shard {SHARD_INDEX}/{SHARD_COUNT}] handling {len(my_items)} of {len(watchlist)} total product(s)")
+
+        for item in my_items:
+            check_and_maybe_alert(item, state, now, session, page)
+
         save_json(STATE_FILE, state)
-        return
-
-    if not watchlist:
-        print("Watchlist is empty, nothing to do.")
-        save_json(STATE_FILE, state)
-        return
-
-    now = datetime.now(timezone.utc)
-    my_items = [item for item in watchlist if belongs_to_this_shard(get_item_id(item))]
-    print(f"[shard {SHARD_INDEX}/{SHARD_COUNT}] handling {len(my_items)} of {len(watchlist)} total product(s)")
-
-    for item in my_items:
-        check_and_maybe_alert(item, state, now, session)
-
-    save_json(STATE_FILE, state)
 
 
-def check_and_maybe_alert(item, state, now, session):
+def check_and_maybe_alert(item, state, now, session, page):
     marketplace = item.get("marketplace", "amazon")
     item_id = get_item_id(item)
     name = item.get("name") or item_id
@@ -460,7 +468,7 @@ def check_and_maybe_alert(item, state, now, session):
     time.sleep(random.uniform(1, 3))  # small jitter, less bot-like than instant back-to-back hits
 
     if marketplace == "kohls":
-        in_stock, price, title, image_url, definitely_unavailable, confirmed = check_kohls(item["url"], session)
+        in_stock, price, title, image_url, definitely_unavailable, confirmed = check_kohls(item["url"], page)
     else:
         in_stock, price, title, image_url, definitely_unavailable, confirmed = check_product(item_id, session)
 
