@@ -103,40 +103,85 @@ def extract_asin(value):
     return value  # fall back, let it fail loudly downstream
 
 
-def check_product(asin, session, max_attempts=5):
-    """Retries a few times with the SAME session (cookies persist across retries,
-    mimicking a real browsing session) before giving up.
+def check_product(asin, session, page, max_attempts=5, requests_attempts=2):
+    """Hybrid strategy for best speed/efficiency: try the fast, lightweight
+    requests method first (no browser overhead — works for a lot of products);
+    only fall back to a real headless-browser fetch (heavier, but a genuine
+    TLS/browser fingerprint) for whatever's still blocked after that.
     Returns (in_stock, price, title, image_url, definitely_unavailable, confirmed).
-    confirmed=False means every attempt was blocked (no real data this run).
-    definitely_unavailable=True only when the page explicitly said so — a plain
-    'no price found' does NOT set this, since that can also mean our parsing
-    missed it, not that the product is actually out of stock."""
-    for attempt in range(1, max_attempts + 1):
-        in_stock, price, title, image_url, definitely_unavailable, blocked = _check_product_once(asin, session)
+    confirmed=False means every attempt (both methods) was blocked."""
+    for attempt in range(1, requests_attempts + 1):
+        html, status, blocked = _fetch_amazon_requests(asin, session)
         if not blocked:
-            return in_stock, price, title, image_url, definitely_unavailable, True
-        if attempt < max_attempts:
-            wait = random.uniform(2, 5) * attempt
-            print(f"    [!] attempt {attempt} blocked for {asin}, retrying in {wait:.1f}s...")
+            result = _parse_amazon_html(asin, html)
+            if result[-1]:  # confirmed — real content, not a CAPTCHA page
+                return result
+        if attempt < requests_attempts:
+            wait = random.uniform(2, 4) * attempt
+            print(f"    [!] requests attempt {attempt} blocked for {asin}, retrying in {wait:.1f}s...")
             time.sleep(wait)
-    print(f"    [!] {asin}: still blocked after {max_attempts} attempts, giving up this run")
+
+    browser_attempts = max_attempts - requests_attempts
+    print(f"    [!] {asin}: requests method exhausted, falling back to real browser "
+          f"for up to {browser_attempts} more attempt(s)")
+    for attempt in range(1, browser_attempts + 1):
+        html, status, blocked = _fetch_amazon_browser(asin, page)
+        if not blocked:
+            result = _parse_amazon_html(asin, html)
+            if result[-1]:
+                return result
+        if attempt < browser_attempts:
+            wait = random.uniform(3, 6) * attempt
+            print(f"    [!] browser attempt {attempt} blocked for {asin}, retrying in {wait:.1f}s...")
+            time.sleep(wait)
+
+    print(f"    [!] {asin}: still blocked after both methods, giving up this run")
     return False, None, None, None, False, False
 
 
-def _check_product_once(asin, session):
-    """Returns (in_stock, price, title, image_url, blocked)."""
+def _fetch_amazon_requests(asin, session):
+    """Returns (html_or_None, status_code_or_None, blocked)."""
     url = f"https://www.amazon.com/dp/{asin}"
     try:
         resp = session.get(url, timeout=15)
     except requests.RequestException as e:
         print(f"  [!] request failed for {asin}: {e}")
-        return False, None, None, None, None, True
-
+        return None, None, True
     if resp.status_code != 200:
-        print(f"  [!] status {resp.status_code} for {asin} (possibly blocked)")
-        return False, None, None, None, None, True
+        print(f"  [!] status {resp.status_code} for {asin} (possibly blocked) [requests]")
+        return None, resp.status_code, True
+    return resp.text, 200, False
 
-    html = resp.text
+
+def _fetch_amazon_browser(asin, page):
+    """Returns (html_or_None, status_code_or_None, blocked)."""
+    url = f"https://www.amazon.com/dp/{asin}"
+    try:
+        response = page.goto(url, timeout=25000, wait_until="domcontentloaded")
+        page.wait_for_timeout(random.randint(800, 1500))
+        try:
+            page.wait_for_selector(
+                "#corePriceDisplay_desktop_feature_div, #corePrice_feature_div, "
+                ".a-price-whole, #priceblock_ourprice",
+                timeout=6000,
+            )
+        except Exception:
+            pass  # price element may genuinely be absent (out of stock) — proceed anyway
+        page.wait_for_timeout(random.randint(500, 1000))
+    except Exception as e:
+        print(f"  [!] navigation failed for {asin}: {e}")
+        return None, None, True
+
+    if response is None or response.status != 200:
+        status = response.status if response else None
+        print(f"  [!] status {status} for {asin} (possibly blocked) [browser]")
+        return None, status, True
+    return page.content(), 200, False
+
+
+def _parse_amazon_html(asin, html):
+    """Returns (in_stock, price, title, image_url, definitely_unavailable, confirmed).
+    Shared parsing logic for HTML from either fetch method above."""
     print(f"    [debug] page length: {len(html)} chars, "
           f"has corePriceDisplay: {'corePriceDisplay' in html}, "
           f"has a-price-whole: {'a-price-whole' in html}")
@@ -145,7 +190,7 @@ def _check_product_once(asin, session):
     # in the logs from a genuine "out of stock" reading
     if "api-services-support@amazon.com" in html or "Enter the characters you see below" in html:
         print(f"  [!] {asin}: got a CAPTCHA/blocked page, not the real product page")
-        return False, None, None, None, None, True
+        return False, None, None, None, False, False
 
     # target the specific "availability" section just for diagnostic logging
     html_lower = html.lower()
@@ -219,7 +264,7 @@ def _check_product_once(asin, session):
         print(f"    [!] availability text says unavailable — overriding in_stock to False")
         in_stock = False
 
-    return in_stock, price, title, image_url, definitely_unavailable, False
+    return in_stock, price, title, image_url, definitely_unavailable, True
 
 
 def check_kohls(url, page, max_attempts=5):
@@ -470,7 +515,7 @@ def check_and_maybe_alert(item, state, now, session, page):
     if marketplace == "kohls":
         in_stock, price, title, image_url, definitely_unavailable, confirmed = check_kohls(item["url"], page)
     else:
-        in_stock, price, title, image_url, definitely_unavailable, confirmed = check_product(item_id, session)
+        in_stock, price, title, image_url, definitely_unavailable, confirmed = check_product(item_id, session, page)
 
     print(f"    in_stock={in_stock} price={price} image={'yes' if image_url else 'no'} "
           f"definitely_unavailable={definitely_unavailable} confirmed={confirmed}")
