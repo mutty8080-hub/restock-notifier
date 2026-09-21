@@ -18,7 +18,8 @@ from datetime import datetime, timezone
 from email.mime.text import MIMEText
 
 import requests
-from playwright.sync_api import sync_playwright  # used only for Kohls — see check_kohls
+from curl_cffi import requests as curl_requests  # real Chrome TLS fingerprint — used for Kohls
+from playwright.sync_api import sync_playwright  # used only for Amazon's browser fallback tier
 
 WATCHLIST_FILE = "watchlist.json"
 SHARD_INDEX = int(os.environ.get("SHARD_INDEX", "0"))
@@ -267,11 +268,11 @@ def _parse_amazon_html(asin, html):
     return in_stock, price, title, image_url, definitely_unavailable, True
 
 
-def check_kohls(url, page, max_attempts=5):
-    """Retries a few times with the SAME Playwright page before giving up.
+def check_kohls(url, max_attempts=5):
+    """Retries a few times before giving up.
     Returns (in_stock, price, title, image_url, definitely_unavailable, confirmed)."""
     for attempt in range(1, max_attempts + 1):
-        in_stock, price, title, image_url, definitely_unavailable, blocked = _check_kohls_once(url, page)
+        in_stock, price, title, image_url, definitely_unavailable, blocked = _check_kohls_once(url)
         if not blocked:
             return in_stock, price, title, image_url, definitely_unavailable, True
         if attempt < max_attempts:
@@ -282,21 +283,26 @@ def check_kohls(url, page, max_attempts=5):
     return False, None, None, None, False, False
 
 
-def _check_kohls_once(url, page):
-    """Returns (in_stock, price, title, image_url, definitely_unavailable, blocked)."""
+def _check_kohls_once(url):
+    """Returns (in_stock, price, title, image_url, definitely_unavailable, blocked).
+    Uses curl_cffi, which impersonates a real Chrome TLS/JA3 fingerprint at the
+    connection level — the specific signal Kohls appears to gate on (a real
+    headless browser still got a flat 403, which pointed at fingerprinting
+    rather than JS/content checks)."""
     try:
-        response = page.goto(url, timeout=25000, wait_until="domcontentloaded")
-        page.wait_for_timeout(random.randint(800, 1500))
+        resp = curl_requests.get(
+            url, timeout=15, impersonate="chrome124",
+            headers={"Accept-Language": "en-US,en;q=0.9"},
+        )
     except Exception as e:
-        print(f"  [!] navigation failed for Kohls URL: {e}")
+        print(f"  [!] request failed for Kohls URL: {e}")
         return False, None, None, None, None, True
 
-    if response is None or response.status != 200:
-        status = response.status if response else "no response"
-        print(f"  [!] status {status} for Kohls URL (possibly blocked)")
+    if resp.status_code != 200:
+        print(f"  [!] status {resp.status_code} for Kohls URL (possibly blocked)")
         return False, None, None, None, None, True
 
-    html = page.content()
+    html = resp.text
     print(f"    [debug] page length: {len(html)} chars")
 
     # generic bot-block detection (Kohls, like most large retailers, uses
@@ -513,7 +519,7 @@ def check_and_maybe_alert(item, state, now, session, page):
     time.sleep(random.uniform(1, 3))  # small jitter, less bot-like than instant back-to-back hits
 
     if marketplace == "kohls":
-        in_stock, price, title, image_url, definitely_unavailable, confirmed = check_kohls(item["url"], page)
+        in_stock, price, title, image_url, definitely_unavailable, confirmed = check_kohls(item["url"])
     else:
         in_stock, price, title, image_url, definitely_unavailable, confirmed = check_product(item_id, session, page)
 
