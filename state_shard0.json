@@ -63,9 +63,9 @@
     "last_alert_price": 47.95,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 48.38,
-    "last_in_stock": true,
-    "last_checked": "2026-09-25 20:10 UTC"
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-09-25 20:21 UTC"
   },
   "kohls-mua3wvnrkv0ri4": {
     "alerted": false,
