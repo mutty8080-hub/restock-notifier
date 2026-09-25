@@ -39,9 +39,9 @@
     "alerted": false,
     "last_alert_price": null,
     "seen_spike": false,
-    "seen_oos": false,
-    "last_price": null,
+    "seen_oos": true,
+    "last_price": 23.99,
     "last_in_stock": false,
-    "last_checked": "2026-09-25 10:40 UTC"
+    "last_checked": "2026-09-25 13:40 UTC"
   }
 }
