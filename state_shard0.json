@@ -65,16 +65,16 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-09-28 19:20 UTC"
+    "last_checked": "2026-09-28 19:30 UTC"
   },
   "kohls-mua3wvnrkv0ri4": {
     "alerted": false,
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": true,
-    "last_price": null,
+    "last_price": 22.39,
     "last_in_stock": false,
-    "last_checked": "2026-09-28 15:11 UTC"
+    "last_checked": "2026-09-28 19:30 UTC"
   },
   "B0DLZ9Z33W": {
     "alerted": false,
