@@ -65,10 +65,10 @@
   "B0FHJ77N8Y": {
     "alerted": true,
     "last_alert_price": 21.99,
-    "seen_spike": false,
+    "seen_spike": true,
     "seen_oos": false,
-    "last_price": 21.42,
+    "last_price": 23371.0,
     "last_in_stock": true,
-    "last_checked": "2026-09-28 00:10 UTC"
+    "last_checked": "2026-09-28 00:21 UTC"
   }
 }
