@@ -93,5 +93,14 @@
     "last_price": 25.04,
     "last_in_stock": true,
     "last_checked": "2026-09-26 19:36 UTC"
+  },
+  "B0FHL1SX3G": {
+    "alerted": true,
+    "last_alert_price": 36.16,
+    "seen_spike": false,
+    "seen_oos": false,
+    "last_price": 36.16,
+    "last_in_stock": true,
+    "last_checked": "2026-09-29 22:53 UTC"
   }
 }
