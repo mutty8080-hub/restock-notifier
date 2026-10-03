@@ -6,16 +6,16 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-10-03 10:30 UTC"
+    "last_checked": "2026-10-03 10:40 UTC"
   },
   "B07P7KFRW7": {
     "alerted": false,
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 52.99,
-    "last_in_stock": true,
-    "last_checked": "2026-10-03 10:30 UTC"
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-10-03 10:40 UTC"
   },
   "B0CZSPMHJ8": {
     "alerted": true,
@@ -67,9 +67,9 @@
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 43.67,
+    "last_price": 62.09,
     "last_in_stock": true,
-    "last_checked": "2026-10-03 10:30 UTC"
+    "last_checked": "2026-10-03 10:40 UTC"
   },
   "kohls-mu7ok42d9btkqt": {
     "alerted": true,
@@ -96,6 +96,6 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-10-03 10:30 UTC"
+    "last_checked": "2026-10-03 10:40 UTC"
   }
 }
