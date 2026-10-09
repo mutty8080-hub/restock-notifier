@@ -69,6 +69,15 @@
     "seen_oos": false,
     "last_price": 21.37,
     "last_in_stock": true,
-    "last_checked": "2026-10-09 22:20 UTC"
+    "last_checked": "2026-10-09 22:30 UTC"
+  },
+  "B0H9Z535TM": {
+    "alerted": false,
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": false,
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-10-09 22:30 UTC"
   }
 }
