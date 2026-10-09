@@ -72,9 +72,9 @@
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": true,
-    "last_price": 17.99,
+    "last_price": 19.19,
     "last_in_stock": false,
-    "last_checked": "2026-10-08 23:50 UTC"
+    "last_checked": "2026-10-09 23:40 UTC"
   },
   "B0DLZ9Z33W": {
     "alerted": false,
@@ -111,5 +111,14 @@
     "last_price": null,
     "last_in_stock": false,
     "last_checked": "2026-10-09 22:23 UTC"
+  },
+  "kohls-mv1il618ssf1ml": {
+    "alerted": false,
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": true,
+    "last_price": 10.39,
+    "last_in_stock": false,
+    "last_checked": "2026-10-09 23:40 UTC"
   }
 }
