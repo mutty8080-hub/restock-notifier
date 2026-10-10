@@ -65,11 +65,11 @@
   "B0FHJ77N8Y": {
     "alerted": true,
     "last_alert_price": 21.37,
-    "seen_spike": false,
+    "seen_spike": true,
     "seen_oos": false,
-    "last_price": 21.76,
+    "last_price": 393.55,
     "last_in_stock": true,
-    "last_checked": "2026-10-10 20:20 UTC"
+    "last_checked": "2026-10-10 20:31 UTC"
   },
   "B0H9Z535TM": {
     "alerted": false,
@@ -78,6 +78,6 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-10-10 20:20 UTC"
+    "last_checked": "2026-10-10 20:31 UTC"
   }
 }
