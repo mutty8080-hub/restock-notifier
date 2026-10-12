@@ -43,5 +43,14 @@
     "last_price": null,
     "last_in_stock": false,
     "last_checked": "2026-10-09 12:10 UTC"
+  },
+  "kohls-mv3a4imszs9e5p": {
+    "alerted": false,
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": true,
+    "last_price": 19.99,
+    "last_in_stock": false,
+    "last_checked": "2026-10-12 04:00 UTC"
   }
 }
