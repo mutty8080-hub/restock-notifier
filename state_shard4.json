@@ -4,18 +4,18 @@
     "last_alert_price": 21.56,
     "seen_spike": true,
     "seen_oos": false,
-    "last_price": 72.95,
+    "last_price": 940.23,
     "last_in_stock": true,
-    "last_checked": "2026-10-14 06:30 UTC"
+    "last_checked": "2026-10-14 06:40 UTC"
   },
   "B000FDX0U4": {
     "alerted": false,
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 69.53,
+    "last_price": 896.17,
     "last_in_stock": true,
-    "last_checked": "2026-10-14 06:30 UTC"
+    "last_checked": "2026-10-14 06:40 UTC"
   },
   "kohls-muc6mnrut7s9hz": {
     "alerted": false,
@@ -40,8 +40,8 @@
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 113.92,
+    "last_price": 1468.35,
     "last_in_stock": true,
-    "last_checked": "2026-10-14 06:30 UTC"
+    "last_checked": "2026-10-14 06:40 UTC"
   }
 }
