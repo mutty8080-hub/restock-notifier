@@ -7,7 +7,7 @@
   },
   {
     "asin": "B0G1NDP85W",
-    "name": "Five Nights at Freddy\u2019s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
+    "name": "Five Nights at Freddy’s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
     "max_price": 29.99,
     "watch_until": "2027-09-01"
   },
@@ -19,7 +19,7 @@
   },
   {
     "asin": "B0G1NDP85W",
-    "name": "Five Nights at Freddy\u2019s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
+    "name": "Five Nights at Freddy’s 6-Inch Endo-Series Collector Figure - 6-Inch Endo-02 with Swapable Montgomery Gator and Shattered Montgomery Gator Parts",
     "max_price": 30,
     "watch_until": null
   },
@@ -41,7 +41,7 @@
     "marketplace": "kohls",
     "id": "kohls-mua3wvnrkv0ri4",
     "url": "https://www.kohls.com/product/prd-8065206/celebrate-together-disneys-winnie-the-pooh-led-pumpkin-table-decor.jsp",
-    "name": "Celebrate Together\u2122 Disney's Winnie the Pooh LED Pumpkin Table Decor",
+    "name": "Celebrate Together™ Disney's Winnie the Pooh LED Pumpkin Table Decor",
     "max_price": 30,
     "watch_until": null
   },
@@ -57,7 +57,7 @@
     "marketplace": "kohls",
     "id": "kohls-muc6mnrut7s9hz",
     "url": "https://www.kohls.com/product/prd-8065202/celebrate-together-disneys-daisy-duck-led-pumpkin-table-decor.jsp",
-    "name": "Celebrate Together\u2122 Disney's Daisy Duck LED Pumpkin Table Decor",
+    "name": "Celebrate Together™ Disney's Daisy Duck LED Pumpkin Table Decor",
     "max_price": 40,
     "watch_until": null
   },
@@ -65,7 +65,7 @@
     "marketplace": "kohls",
     "id": "kohls-muc6njzi1k5w4k",
     "url": "https://www.kohls.com/product/prd-8065200/celebrate-together-disneys-donald-duck-pumpkin-led-table-decor.jsp",
-    "name": "Celebrate Together\u2122 Disney's Donald Duck Pumpkin LED Table Decor",
+    "name": "Celebrate Together™ Disney's Donald Duck Pumpkin LED Table Decor",
     "max_price": 40,
     "watch_until": null
   },
@@ -102,7 +102,7 @@
     "marketplace": "kohls",
     "id": "kohls-mv3a4imszs9e5p",
     "url": "https://www.kohls.com/product/prd-7585074/disneys-stitch-led-snow-cone-cart-village-accessory-table-decor-by-st-nicholas-square.jsp",
-    "name": "Disney's Stitch LED Snow Cone Cart Village Accessory Table Decor by St. Nicholas Square\u00ae",
+    "name": "Disney's Stitch LED Snow Cone Cart Village Accessory Table Decor by St. Nicholas Square®",
     "max_price": 35.99,
     "watch_until": null
   },
@@ -111,6 +111,13 @@
     "asin": "B0FDFZG9QH",
     "name": "Marvel Legends Series 15 cm Comic Inspired Marvel's Lizard Collectible Figure Spider-Man",
     "max_price": 37,
+    "watch_until": null
+  },
+  {
+    "marketplace": "amazon",
+    "asin": "B0CXMK3Z4B",
+    "name": "WWE Rob Van Dam RVD Mattel Ultimate Edition Best of Ruthless Aggression",
+    "max_price": 49.99,
     "watch_until": null
   }
 ]
