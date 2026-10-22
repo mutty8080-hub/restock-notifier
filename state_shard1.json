@@ -81,13 +81,13 @@
     "last_checked": "2026-09-22 02:30 UTC"
   },
   "kohls-muc6luvlc7jsve": {
-    "alerted": false,
-    "last_alert_price": null,
+    "alerted": true,
+    "last_alert_price": 26.99,
     "seen_spike": false,
-    "seen_oos": true,
+    "seen_oos": false,
     "last_price": 26.99,
-    "last_in_stock": false,
-    "last_checked": "2026-10-21 17:10 UTC"
+    "last_in_stock": true,
+    "last_checked": "2026-10-22 20:24 UTC"
   },
   "B0FHL1SX3G": {
     "alerted": true,
