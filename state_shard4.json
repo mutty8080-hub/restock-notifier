@@ -13,9 +13,9 @@
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 49.06,
-    "last_in_stock": true,
-    "last_checked": "2026-10-24 03:01 UTC"
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-10-24 03:10 UTC"
   },
   "kohls-muc6mnrut7s9hz": {
     "alerted": false,
@@ -40,8 +40,8 @@
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 74.99,
-    "last_in_stock": true,
-    "last_checked": "2026-10-24 03:01 UTC"
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-10-24 03:10 UTC"
   }
 }
