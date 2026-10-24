@@ -78,7 +78,7 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-10-24 02:10 UTC"
+    "last_checked": "2026-10-24 02:20 UTC"
   },
   "B0CXMK3Z4B": {
     "alerted": false,
@@ -87,6 +87,6 @@
     "seen_oos": false,
     "last_price": 69.95,
     "last_in_stock": true,
-    "last_checked": "2026-10-24 02:10 UTC"
+    "last_checked": "2026-10-24 02:20 UTC"
   }
 }
