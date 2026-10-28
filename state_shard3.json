@@ -49,9 +49,9 @@
     "last_alert_price": null,
     "seen_spike": false,
     "seen_oos": true,
-    "last_price": 12.49,
+    "last_price": 19.99,
     "last_in_stock": false,
-    "last_checked": "2026-10-25 22:10 UTC"
+    "last_checked": "2026-10-28 05:00 UTC"
   },
   "B0GK2WC6VC": {
     "alerted": true,
@@ -60,6 +60,6 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-10-28 04:50 UTC"
+    "last_checked": "2026-10-28 05:00 UTC"
   }
 }
