@@ -183,5 +183,14 @@
     "last_price": 26.66,
     "last_in_stock": true,
     "last_checked": "2026-10-29 17:57 UTC"
+  },
+  "B0DBWLHZ2X": {
+    "alerted": false,
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": false,
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-10-29 18:07 UTC"
   }
 }
