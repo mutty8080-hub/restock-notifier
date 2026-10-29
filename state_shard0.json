@@ -153,9 +153,9 @@
     "last_alert_price": 15.98,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 15.98,
-    "last_in_stock": true,
-    "last_checked": "2026-10-29 17:10 UTC"
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-10-29 17:20 UTC"
   },
   "B0G22SFR8G": {
     "alerted": false,
