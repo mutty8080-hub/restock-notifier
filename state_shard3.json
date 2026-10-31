@@ -60,16 +60,16 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-10-31 11:10 UTC"
+    "last_checked": "2026-10-31 11:20 UTC"
   },
   "B0G22SFR8G": {
-    "alerted": false,
-    "last_alert_price": null,
+    "alerted": true,
+    "last_alert_price": 11.07,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": null,
-    "last_in_stock": false,
-    "last_checked": "2026-10-31 11:10 UTC"
+    "last_price": 11.07,
+    "last_in_stock": true,
+    "last_checked": "2026-10-31 11:20 UTC"
   },
   "B0BTCDYBN6": {
     "alerted": false,
@@ -78,6 +78,6 @@
     "seen_oos": false,
     "last_price": 19.99,
     "last_in_stock": true,
-    "last_checked": "2026-10-31 11:10 UTC"
+    "last_checked": "2026-10-31 11:20 UTC"
   }
 }
