@@ -4,9 +4,9 @@
     "last_alert_price": 29.99,
     "seen_spike": false,
     "seen_oos": false,
-    "last_price": 28.67,
-    "last_in_stock": true,
-    "last_checked": "2026-11-04 14:50 UTC"
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-11-04 15:01 UTC"
   },
   "B000FDX0U4": {
     "alerted": false,
@@ -51,6 +51,6 @@
     "seen_oos": false,
     "last_price": null,
     "last_in_stock": false,
-    "last_checked": "2026-11-04 14:50 UTC"
+    "last_checked": "2026-11-04 15:01 UTC"
   }
 }
