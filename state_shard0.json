@@ -255,5 +255,14 @@
     "last_price": 24.99,
     "last_in_stock": true,
     "last_checked": "2026-11-13 12:50 UTC"
+  },
+  "B0GCG6W64K": {
+    "alerted": false,
+    "last_alert_price": null,
+    "seen_spike": false,
+    "seen_oos": false,
+    "last_price": null,
+    "last_in_stock": false,
+    "last_checked": "2026-11-13 13:08 UTC"
   }
 }
